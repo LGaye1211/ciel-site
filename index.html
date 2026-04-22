@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CIEL — Deepwoken Script</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #04040d;
+      --bg2: #08081a;
+      --purple: #7c22ff;
+      --purple-lg: #bf80ff;
+      --cyan: #00b8d4;
+      --cyan-lg: #00e5ff;
+      --pink: #ff2d78;
+      --white: #eeeeff;
+      --muted: #8892a4;
+      --dim: #3a4255;
+      --card: rgba(255,255,255,0.03);
+      --card-h: rgba(255,255,255,0.06);
+      --border: rgba(124,34,255,0.22);
+      --border-c: rgba(0,184,212,0.22);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Space Grotesk', sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 2px; }
+
+    /* ── NAV ─────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 16px 48px;
+      display: flex; align-items: center; justify-content: space-between;
+      backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+      background: rgba(7,7,15,0.8);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .nav-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px; font-weight: 700; letter-spacing: 0.22em;
+      background: linear-gradient(135deg, var(--purple-lg), var(--cyan-lg));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: 13px;
+      font-weight: 500; letter-spacing: 0.04em; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--white); }
+    .nav-cta {
+      background: var(--purple); color: white; border: none;
+      padding: 9px 20px; border-radius: 7px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; text-decoration: none;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .nav-cta:hover { background: #7c3aed; box-shadow: 0 0 20px rgba(109,40,217,0.5); transform: translateY(-1px); }
+
+    /* ── HERO ────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 140px 24px 100px;
+      position: relative; overflow: hidden;
+    }
+    .orb {
+      position: absolute; border-radius: 50%; pointer-events: none;
+      filter: blur(1px);
+    }
+    .orb-1 {
+      width: 650px; height: 650px;
+      background: radial-gradient(circle, rgba(109,40,217,0.13) 0%, transparent 68%);
+      top: -160px; left: -120px;
+      animation: drift1 10s ease-in-out infinite alternate;
+    }
+    .orb-2 {
+      width: 550px; height: 550px;
+      background: radial-gradient(circle, rgba(8,145,178,0.09) 0%, transparent 68%);
+      bottom: -100px; right: -80px;
+      animation: drift2 13s ease-in-out infinite alternate;
+    }
+    .orb-3 {
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(109,40,217,0.08) 0%, transparent 68%);
+      top: 40%; right: 10%;
+      animation: drift1 7s ease-in-out infinite alternate;
+    }
+    @keyframes drift1 { from { transform: translate(0,0); } to { transform: translate(80px, 60px); } }
+    @keyframes drift2 { from { transform: translate(0,0); } to { transform: translate(-60px, -50px); } }
+
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(109,40,217,0.09);
+      border: 1px solid rgba(109,40,217,0.25);
+      padding: 5px 16px; border-radius: 100px;
+      font-size: 11px; font-family: 'JetBrains Mono', monospace;
+      color: var(--purple-lg); letter-spacing: 0.18em; text-transform: uppercase;
+      margin-bottom: 32px; position: relative; z-index: 1;
+    }
+    .pulse-dot {
+      width: 6px; height: 6px; background: var(--cyan-lg);
+      border-radius: 50%; animation: blink 1.8s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.15;} }
+
+    .hero h1 {
+      font-size: clamp(88px, 15vw, 200px);
+      font-weight: 800; letter-spacing: -0.05em; line-height: 0.86;
+      position: relative; z-index: 1; margin-bottom: 16px;
+      background: linear-gradient(160deg, #fff 0%, var(--purple-lg) 45%, var(--cyan-lg) 85%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-sub {
+      font-family: 'JetBrains Mono', monospace; font-size: 12px;
+      color: var(--dim); letter-spacing: 0.3em; text-transform: uppercase;
+      margin-bottom: 24px; position: relative; z-index: 1;
+    }
+    .hero-desc {
+      font-size: 17px; color: var(--muted); max-width: 480px;
+      line-height: 1.8; margin-bottom: 48px; position: relative; z-index: 1;
+    }
+    .hero-btns {
+      display: flex; gap: 12px; z-index: 1;
+      position: relative; flex-wrap: wrap; justify-content: center;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--purple) 0%, #4c1d95 100%);
+      color: white; border: none; padding: 15px 36px; border-radius: 9px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all 0.25s; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 9px;
+      box-shadow: 0 8px 32px rgba(109,40,217,0.42);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 48px rgba(109,40,217,0.62); }
+    .btn-ghost {
+      background: transparent; color: var(--muted);
+      border: 1px solid rgba(255,255,255,0.09); padding: 15px 36px; border-radius: 9px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 500;
+      cursor: pointer; transition: all 0.25s; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 7px;
+    }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.22); color: var(--white); }
+
+    .hero-stats {
+      display: flex; gap: 52px; margin-top: 88px; position: relative; z-index: 1;
+    }
+    .stat { text-align: center; }
+    .stat-n {
+      font-size: 32px; font-weight: 700; letter-spacing: -0.03em;
+      background: linear-gradient(135deg, var(--purple-lg), var(--cyan-lg));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .stat-l {
+      font-size: 10px; color: var(--dim); letter-spacing: 0.18em;
+      text-transform: uppercase; font-family: 'JetBrains Mono', monospace; margin-top: 4px;
+    }
+
+    /* ── SHOWCASE ─────────────────────────────────────── */
+    .showcase-wrap { height: 380vh; position: relative; }
+    .showcase-sticky {
+      position: sticky; top: 0; height: 100vh;
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .showcase-tag {
+      position: absolute; top: 86px; left: 50%; transform: translateX(-50%);
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      color: var(--dim); letter-spacing: 0.3em; text-transform: uppercase;
+      z-index: 20; white-space: nowrap;
+    }
+    .before-wrap {
+      position: absolute; width: min(680px, 88vw);
+      border-radius: 13px; overflow: hidden; z-index: 5;
+      box-shadow:
+        0 0 0 1px rgba(109,40,217,0.32),
+        0 0 60px rgba(109,40,217,0.22),
+        0 0 120px rgba(109,40,217,0.1),
+        0 52px 100px rgba(0,0,0,0.9);
+    }
+    .before-wrap img { width: 100%; display: block; }
+    .before-wrap::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.035) 2px,rgba(0,0,0,0.035) 4px);
+    }
+    .panel-wrap { position: absolute; opacity: 0; z-index: 10; pointer-events: none; }
+    .mini-panel {
+      background: rgba(9,9,20,0.98); border-radius: 10px;
+      border: 1px solid rgba(109,40,217,0.28); overflow: hidden;
+      backdrop-filter: blur(40px); width: 208px;
+      box-shadow: 0 0 0 1px rgba(109,40,217,0.1), 0 16px 48px rgba(0,0,0,0.75), 0 0 40px rgba(109,40,217,0.1);
+    }
+    .mini-panel.c {
+      border-color: rgba(8,145,178,0.28);
+      box-shadow: 0 0 0 1px rgba(8,145,178,0.1), 0 16px 48px rgba(0,0,0,0.75), 0 0 40px rgba(8,145,178,0.1);
+    }
+    .mp-head {
+      padding: 9px 13px; border-bottom: 1px solid rgba(255,255,255,0.05);
+      display: flex; align-items: center; gap: 7px;
+      font-size: 11px; font-weight: 600; font-family: 'JetBrains Mono', monospace;
+      color: var(--white); letter-spacing: 0.06em;
+    }
+    .mp-dot { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--purple-lg); flex-shrink: 0; display:flex;align-items:center;justify-content:center;font-size:7px; }
+    .mp-dot.c { border-color: var(--cyan-lg); }
+    .mp-row {
+      padding: 6px 13px; display: flex; align-items: center; justify-content: space-between;
+      font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace;
+      border-bottom: 1px solid rgba(255,255,255,0.025);
+    }
+    .tog { width: 26px; height: 14px; border-radius: 9px; background: rgba(255,255,255,0.07); position: relative; flex-shrink:0; }
+    .tog.on   { background: var(--purple); }
+    .tog.on-c { background: var(--cyan); }
+    .tog::after { content:''; position:absolute; width:10px;height:10px; background:white; border-radius:50%; top:2px; }
+    .tog.on::after,.tog.on-c::after { left:14px; }
+    .tog:not(.on):not(.on-c)::after { left:2px; }
+    .mp-bar { height: 3px; background: rgba(255,255,255,0.06); border-radius:2px; margin:3px 13px 6px; overflow:hidden; }
+    .mp-bar-fill { height:100%; border-radius:2px; background: linear-gradient(90deg, var(--purple), var(--cyan-lg)); }
+
+    /* ── DIVIDER ─────────────────────────────────────── */
+    .divider {
+      height: 1px; max-width: 860px; margin: 0 auto;
+      background: linear-gradient(90deg, transparent, rgba(109,40,217,0.28), rgba(8,145,178,0.28), transparent);
+    }
+
+    /* ── SECTION LABEL ────────────────────────────────── */
+    .sh { text-align: center; margin-bottom: 68px; }
+    .sh-tag {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      color: var(--cyan-lg); letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 16px;
+    }
+    .sh-title {
+      font-size: clamp(30px, 5vw, 54px); font-weight: 700;
+      letter-spacing: -0.03em; line-height: 1.06;
+    }
+    .sh-desc {
+      margin-top: 16px; color: var(--muted); font-size: 15px;
+      max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.8;
+    }
+
+    /* ── ALL FEATURES ────────────────────────────────── */
+    .all-features { padding: 130px 52px; max-width: 1200px; margin: 0 auto; }
+
+    /* Category blocks */
+    .feat-category { margin-bottom: 64px; }
+    .feat-cat-label {
+      display: flex; align-items: center; gap: 12px;
+      font-family: 'JetBrains Mono', monospace; font-size: 11px;
+      color: var(--dim); letter-spacing: 0.22em; text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .feat-cat-label::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.06), transparent);
+    }
+
+    .feat-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+    }
+    .feat-card {
+      background: var(--card); border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 13px; padding: 22px 20px;
+      transition: all 0.28s; position: relative; overflow: hidden;
+    }
+    .feat-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 0% 0%, rgba(109,40,217,0.07), transparent 60%);
+      opacity: 0; transition: opacity 0.28s;
+    }
+    .feat-card:hover { border-color: rgba(109,40,217,0.25); background: var(--card-h); transform: translateY(-3px); }
+    .feat-card:hover::before { opacity: 1; }
+    .feat-card.c-card::before { background: radial-gradient(ellipse at 0% 0%, rgba(8,145,178,0.07), transparent 60%); }
+    .feat-card.c-card:hover { border-color: rgba(8,145,178,0.25); }
+
+    .feat-icon { font-size: 22px; margin-bottom: 12px; }
+    .feat-name {
+      font-size: 14px; font-weight: 600; margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+    .feat-desc { font-size: 12px; color: var(--muted); line-height: 1.65; }
+    .feat-key {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 4px; padding: 1px 7px; font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; color: var(--muted); margin-top: 8px;
+    }
+
+    /* ── EXECUTORS ────────────────────────────────────── */
+    .executors { padding: 0 52px 130px; max-width: 1200px; margin: 0 auto; }
+    .exec-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; max-width: 680px; margin: 0 auto; }
+    .exec-card {
+      background: var(--card); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px; padding: 32px 28px; text-align: center; transition: all 0.28s;
+    }
+    .exec-card:hover { border-color: rgba(109,40,217,0.3); background: var(--card-h); transform: translateY(-3px); }
+    .exec-name { font-size: 18px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.01em; }
+    .exec-label { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+    .exec-badge {
+      display: inline-block; margin-bottom: 16px;
+      width: 48px; height: 48px; border-radius: 12px;
+      background: rgba(109,40,217,0.12); border: 1px solid rgba(109,40,217,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; margin: 0 auto 16px;
+    }
+    .exec-status {
+      display: inline-flex; align-items: center; gap: 5px; margin-top: 12px;
+      font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #4ade80;
+      letter-spacing: 0.1em;
+    }
+    .exec-status::before { content:''; width:6px;height:6px;background:#4ade80;border-radius:50%; }
+    .exec-note { font-size: 12px; color: var(--dim); margin-top: 6px; font-style: italic; }
+
+    /* ── KEY SYSTEM ───────────────────────────────────── */
+    .keysys { padding: 130px 52px; background: rgba(109,40,217,0.03); border-top: 1px solid rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .keysys-inner { max-width: 1100px; margin: 0 auto; }
+    .keysys-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; margin-top: 64px; }
+
+    .steps { display: flex; flex-direction: column; gap: 0; }
+    .step { display: flex; gap: 20px; padding: 24px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .step:last-child { border: none; }
+    .step-num {
+      width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+      background: rgba(109,40,217,0.12); border: 1px solid rgba(109,40,217,0.22);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700;
+      color: var(--purple-lg);
+    }
+    .step-body {}
+    .step-title { font-size: 15px; font-weight: 600; margin-bottom: 5px; }
+    .step-desc { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+    .keysys-right { display: flex; flex-direction: column; gap: 16px; }
+    .key-info-card {
+      background: var(--card); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px; padding: 24px 22px;
+    }
+    .key-info-card h4 { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .key-info-card p { font-size: 13px; color: var(--muted); line-height: 1.7; }
+    .key-info-card.highlight {
+      border-color: rgba(109,40,217,0.3); background: rgba(109,40,217,0.05);
+    }
+    .key-info-card.highlight h4 { color: var(--purple-lg); }
+
+    /* ── SCRIPT BOX ───────────────────────────────────── */
+    .script-section { padding: 130px 52px; max-width: 860px; margin: 0 auto; }
+    .script-box {
+      background: rgba(0,0,0,0.4); border: 1px solid rgba(109,40,217,0.2);
+      border-radius: 12px; overflow: hidden;
+    }
+    .script-topbar {
+      background: rgba(255,255,255,0.03); padding: 12px 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .script-topbar span {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--dim);
+    }
+    .copy-btn {
+      background: rgba(109,40,217,0.15); border: 1px solid rgba(109,40,217,0.25);
+      color: var(--purple-lg); padding: 5px 14px; border-radius: 6px; cursor: pointer;
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { background: rgba(109,40,217,0.25); }
+    .script-code {
+      padding: 20px 22px; font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; color: var(--purple-lg); line-height: 1.6; word-break: break-all;
+    }
+    .script-note {
+      margin-top: 20px; font-size: 13px; color: var(--muted); line-height: 1.8; text-align: center;
+    }
+    .script-note strong { color: var(--white); }
+
+    /* ── PRICING ─────────────────────────────────────── */
+    .pricing { padding: 130px 52px; max-width: 1080px; margin: 0 auto; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; align-items: start; }
+
+    .p-card {
+      background: var(--card); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 18px; padding: 32px 26px; transition: all 0.28s; position: relative; overflow: hidden;
+    }
+    .p-card.featured {
+      border-color: rgba(109,40,217,0.42); background: rgba(109,40,217,0.05); transform: scale(1.02);
+    }
+    .p-card.featured::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--purple), var(--cyan));
+    }
+    .p-card:not(.featured):hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.1); }
+
+    .p-badge {
+      position: absolute; top: 14px; right: 14px;
+      background: linear-gradient(135deg, var(--purple), var(--cyan));
+      color: white; font-size: 9px; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      padding: 3px 10px; border-radius: 100px; font-family: 'JetBrains Mono', monospace;
+    }
+
+    .p-tier {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      color: var(--dim); letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 18px;
+    }
+    .p-price {
+      font-size: 44px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; margin-bottom: 3px;
+    }
+    .p-price .cur { font-size: 18px; font-weight: 500; color: var(--muted); vertical-align: super; }
+    .p-period { font-size: 12px; color: var(--dim); margin-bottom: 28px; font-family: 'JetBrains Mono', monospace; }
+
+    .p-feats { list-style: none; margin-bottom: 32px; }
+    .p-feats li {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-size: 13px; color: var(--muted); padding: 7px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.035);
+    }
+    .p-feats li .ck { color: var(--cyan-lg); font-size: 11px; font-family: 'JetBrains Mono', monospace; flex-shrink:0; margin-top:1px; }
+    .p-feats li.off { color: var(--dim); }
+    .p-feats li.off .ck { color: var(--dim); }
+
+    .p-btn {
+      width: 100%; padding: 12px; border-radius: 9px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.25s; text-decoration: none;
+      display: block; text-align: center;
+      border: 1px solid rgba(255,255,255,0.09); background: transparent; color: var(--muted);
+    }
+    .p-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--white); background: rgba(255,255,255,0.04); }
+    .p-btn.feat {
+      background: linear-gradient(135deg, var(--purple), #4c1d95);
+      border: none; color: white; box-shadow: 0 8px 24px rgba(109,40,217,0.42);
+    }
+    .p-btn.feat:hover { box-shadow: 0 12px 36px rgba(109,40,217,0.62); transform: translateY(-1px); }
+
+    /* ── REVIEWS ─────────────────────────────────────── */
+    .reviews { padding: 130px 52px; max-width: 1080px; margin: 0 auto; }
+    .reviews-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .rev-card {
+      background: var(--card); border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 15px; padding: 26px; transition: all 0.28s;
+    }
+    .rev-card:hover { border-color: rgba(109,40,217,0.2); transform: translateY(-2px); }
+    .rev-stars { color: #fbbf24; font-size: 11px; letter-spacing: 3px; margin-bottom: 16px; }
+    .rev-text { font-size: 13px; color: var(--muted); line-height: 1.8; margin-bottom: 20px; }
+    .rev-author { display: flex; align-items: center; gap: 11px; }
+    .rev-av {
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--purple), var(--cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: white;
+    }
+    .rev-name { font-size: 13px; font-weight: 600; }
+    .rev-handle { font-size: 11px; color: var(--dim); font-family: 'JetBrains Mono', monospace; margin-top: 1px; }
+
+    /* ── CTA ─────────────────────────────────────────── */
+    .cta { padding: 160px 52px; text-align: center; position: relative; overflow: hidden; }
+    .cta-glow {
+      position: absolute; width: 800px; height: 400px;
+      background: radial-gradient(ellipse, rgba(109,40,217,0.1) 0%, transparent 65%);
+      top: 50%; left: 50%; transform: translate(-50%,-50%); pointer-events: none;
+    }
+    .cta h2 {
+      font-size: clamp(40px, 7vw, 80px); font-weight: 800;
+      letter-spacing: -0.04em; line-height: 1; margin-bottom: 24px;
+      position: relative; z-index: 1;
+    }
+    .cta h2 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--purple-lg), var(--cyan-lg));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .cta p {
+      color: var(--muted); font-size: 16px; max-width: 380px;
+      margin: 0 auto 48px; line-height: 1.8; position: relative; z-index: 1;
+    }
+    .cta .btn-primary { position: relative; z-index: 1; }
+
+    /* ── FOOTER ──────────────────────────────────────── */
+    footer {
+      border-top: 1px solid rgba(255,255,255,0.04);
+      padding: 32px 48px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .foot-logo {
+      font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px; letter-spacing: 0.2em;
+      background: linear-gradient(135deg, var(--purple-lg), var(--cyan-lg));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    footer span { color: var(--dim); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+    .foot-links { display: flex; gap: 24px; }
+    .foot-links a { color: var(--dim); text-decoration: none; font-size: 12px; font-family: 'JetBrains Mono', monospace; transition: color 0.2s; }
+    .foot-links a:hover { color: var(--muted); }
+
+    /* ── PARTICLES ───────────────────────────────────── */
+    #particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+
+    /* ── RESPONSIVE ──────────────────────────────────── */
+    @media (max-width: 1000px) {
+      .feat-grid { grid-template-columns: repeat(2, 1fr); }
+      .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+      .p-card.featured { transform: none; }
+      .keysys-grid { grid-template-columns: 1fr; gap: 48px; }
+      .exec-grid { grid-template-columns: 1fr; max-width: 320px; }
+    }
+    @media (max-width: 760px) {
+      nav { padding: 14px 20px; }
+      .nav-links { display: none; }
+      .all-features, .executors, .keysys, .pricing, .reviews, .script-section, .cta { padding: 80px 20px; }
+      .feat-grid, .pricing-grid, .reviews-grid { grid-template-columns: 1fr; }
+      .hero-stats { gap: 24px; }
+      footer { flex-direction: column; gap: 16px; text-align: center; padding: 24px 20px; }
+    }
+
+    /* ── VIBE LAYER ──────────────────────────────────── */
+
+    /* Cursor glow */
+    #cursor-glow {
+      position: fixed; pointer-events: none; z-index: 9999;
+      width: 320px; height: 320px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(124,34,255,0.12) 0%, transparent 65%);
+      transform: translate(-50%, -50%);
+      transition: opacity 0.3s;
+    }
+
+    /* Grain overlay */
+    #grain {
+      position: fixed; inset: 0; z-index: 1;
+      pointer-events: none; opacity: 0.032;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-size: 180px 180px;
+    }
+
+    /* Glitch on hero title */
+    @keyframes glitch-1 {
+      0%,93%,100% { clip-path: inset(0 0 100% 0); transform: translate(0); }
+      94% { clip-path: inset(8% 0 58% 0); transform: translate(-4px, 0); }
+      96% { clip-path: inset(40% 0 20% 0); transform: translate(4px, 0); }
+      98% { clip-path: inset(70% 0 5% 0); transform: translate(-2px, 0); }
+    }
+    @keyframes glitch-2 {
+      0%,91%,100% { clip-path: inset(0 0 100% 0); transform: translate(0); }
+      92% { clip-path: inset(30% 0 40% 0); transform: translate(3px, 0); }
+      95% { clip-path: inset(60% 0 15% 0); transform: translate(-3px, 0); }
+      97% { clip-path: inset(15% 0 70% 0); transform: translate(2px, 0); }
+    }
+
+    .hero h1 { position: relative; }
+    .hero h1::before,
+    .hero h1::after {
+      content: 'CIEL';
+      position: absolute; inset: 0;
+      background: linear-gradient(160deg, #fff 0%, var(--purple-lg) 45%, var(--cyan-lg) 85%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      pointer-events: none;
+    }
+    .hero h1::before {
+      animation: glitch-1 6s infinite;
+      text-shadow: -3px 0 var(--pink);
+      left: 3px;
+    }
+    .hero h1::after {
+      animation: glitch-2 6s infinite;
+      text-shadow: 3px 0 var(--cyan-lg);
+      left: -3px;
+    }
+
+    /* Neon glow on CIEL text */
+    .hero h1 { filter: drop-shadow(0 0 40px rgba(124,34,255,0.45)) drop-shadow(0 0 80px rgba(124,34,255,0.2)); }
+
+    /* Animated neon border on nav */
+    nav::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        var(--purple) 20%,
+        var(--cyan-lg) 50%,
+        var(--purple) 80%,
+        transparent 100%
+      );
+      background-size: 200% 100%;
+      animation: nav-border 4s linear infinite;
+      opacity: 0.5;
+    }
+    @keyframes nav-border {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Scanline on hero */
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0; pointer-events: none; z-index: 2;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 3px,
+        rgba(0,0,0,0.06) 3px,
+        rgba(0,0,0,0.06) 4px
+      );
+    }
+
+    /* Neon card borders with hover glow on feature cards */
+    .feat-card:hover {
+      box-shadow: 0 0 20px rgba(124,34,255,0.15), 0 0 40px rgba(124,34,255,0.07);
+    }
+    .feat-card.c-card:hover {
+      box-shadow: 0 0 20px rgba(0,229,255,0.15), 0 0 40px rgba(0,229,255,0.07);
+      border-color: rgba(0,229,255,0.28) !important;
+    }
+
+    /* Nav logo glow */
+    .nav-logo { filter: drop-shadow(0 0 8px rgba(124,34,255,0.6)); }
+
+    /* btn-primary neon flicker */
+    @keyframes btn-pulse {
+      0%,100% { box-shadow: 0 8px 32px rgba(124,34,255,0.42); }
+      50% { box-shadow: 0 8px 40px rgba(124,34,255,0.65), 0 0 0 1px rgba(124,34,255,0.2); }
+    }
+    .btn-primary { animation: btn-pulse 3s ease-in-out infinite; }
+    .btn-primary:hover { animation: none; }
+
+    /* Pricing featured card neon glow */
+    .p-card.featured {
+      box-shadow: 0 0 40px rgba(124,34,255,0.18), 0 0 80px rgba(124,34,255,0.08);
+    }
+
+    /* Section tags with neon */
+    .sh-tag, .feat-cat-label {
+      text-shadow: 0 0 12px rgba(0,229,255,0.5);
+    }
+
+    /* Before-image vibe glow */
+    .before-wrap {
+      box-shadow:
+        0 0 0 1px rgba(124,34,255,0.4),
+        0 0 60px rgba(124,34,255,0.3),
+        0 0 120px rgba(124,34,255,0.15),
+        0 0 200px rgba(124,34,255,0.08),
+        0 52px 100px rgba(0,0,0,0.9) !important;
+      animation: img-glow 4s ease-in-out infinite alternate;
+    }
+    @keyframes img-glow {
+      from { box-shadow: 0 0 0 1px rgba(124,34,255,0.4), 0 0 60px rgba(124,34,255,0.3), 0 0 120px rgba(124,34,255,0.15), 0 52px 100px rgba(0,0,0,0.9); }
+      to   { box-shadow: 0 0 0 1px rgba(0,229,255,0.35), 0 0 60px rgba(0,229,255,0.25), 0 0 120px rgba(0,229,255,0.12), 0 52px 100px rgba(0,0,0,0.9); }
+    }
+
+    /* Stat numbers neon */
+    .stat-n { filter: drop-shadow(0 0 10px rgba(124,34,255,0.5)); }
+
+    /* Key info highlight card */
+    .key-info-card.highlight {
+      border-color: rgba(124,34,255,0.35) !important;
+      box-shadow: 0 0 24px rgba(124,34,255,0.1);
+    }
+
+    /* Footer glow */
+    .foot-logo { filter: drop-shadow(0 0 8px rgba(124,34,255,0.5)); }
+
+    /* Script box neon */
+    .script-box {
+      box-shadow: 0 0 40px rgba(124,34,255,0.12);
+    }
+
+    /* Hero badge glow */
+    .hero-eyebrow {
+      box-shadow: 0 0 16px rgba(124,34,255,0.2);
+    }
+
+    /* Exec card neon hover */
+    .exec-card:hover {
+      box-shadow: 0 0 24px rgba(124,34,255,0.18);
+    }
+
+    /* Mini panels glow */
+    .mini-panel {
+      box-shadow: 0 0 0 1px rgba(124,34,255,0.15), 0 16px 48px rgba(0,0,0,0.75), 0 0 50px rgba(124,34,255,0.18) !important;
+    }
+    .mini-panel.c {
+      box-shadow: 0 0 0 1px rgba(0,229,255,0.15), 0 16px 48px rgba(0,0,0,0.75), 0 0 50px rgba(0,229,255,0.15) !important;
+    }
+
+    /* CTA h2 glow */
+    .cta h2 em { filter: drop-shadow(0 0 20px rgba(124,34,255,0.5)); }
+  </style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+<div id="cursor-glow"></div>
+<div id="grain"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">CIEL</div>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#executors">Executors</a></li>
+    <li><a href="#keysystem">Key System</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+  </ul>
+  <a href="https://discord.gg/YOURLINK" class="nav-cta" target="_blank">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.079.11 18.1.12 18.12a19.901 19.901 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+    Get a Key
+  </a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="hero-eyebrow">
+    <div class="pulse-dot"></div>
+    Deepwoken Script — Updated
+  </div>
+  <h1>CIEL</h1>
+  <div class="hero-sub">// Built for Deepwoken. No fluff.</div>
+  <p class="hero-desc">Auto farm, ESP, auto parry, movement exploits — everything in one clean hub. Works on Wave, Xeno, and Solara.</p>
+  <div class="hero-btns">
+    <a href="https://discord.gg/YOURLINK" class="btn-primary" target="_blank">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.079.11 18.1.12 18.12a19.901 19.901 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+      Get a Key
+    </a>
+    <a href="#features" class="btn-ghost">See every feature →</a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-n">8K+</div>
+      <div class="stat-l">Users</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n">30+</div>
+      <div class="stat-l">Features</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n">3</div>
+      <div class="stat-l">Executors</div>
+    </div>
+  </div>
+</section>
+
+<!-- SHOWCASE SCROLL ANIMATION -->
+<div class="showcase-wrap" id="showcase">
+  <div class="showcase-sticky" id="showcaseSticky">
+    <div class="showcase-tag" id="showcaseTag">↓ SCROLL TO EXPLORE</div>
+
+    <div class="before-wrap" id="beforeImg">
+      <img src="before.png" alt="CIEL — Deepwoken hub" />
+    </div>
+
+    <!-- Panel: Internal Functions -->
+    <div class="panel-wrap" id="panelA">
+      <div class="mini-panel">
+        <div class="mp-head"><div class="mp-dot">◈</div>Internal functions</div>
+        <div class="mp-row">No Fall Damage <div class="tog"></div></div>
+        <div class="mp-row">Auto Unragdoll <div class="tog"></div></div>
+        <div class="mp-row">Noclip <div class="tog on"></div></div>
+        <div class="mp-row">No Animations <div class="tog"></div></div>
+      </div>
+    </div>
+
+    <!-- Panel: Player -->
+    <div class="panel-wrap" id="panelB">
+      <div class="mini-panel">
+        <div class="mp-head"><div class="mp-dot">◎</div>Player</div>
+        <div class="mp-row">Fly (Y) <div class="tog on"></div></div>
+        <div class="mp-bar"><div class="mp-bar-fill" style="width:60%"></div></div>
+        <div class="mp-row">Speedhack (N) <div class="tog on"></div></div>
+        <div class="mp-row">Infinite Jump (H) <div class="tog"></div></div>
+        <div class="mp-row">Agility Spoofer <div class="tog on"></div></div>
+      </div>
+    </div>
+
+    <!-- Panel: Events -->
+    <div class="panel-wrap" id="panelC">
+      <div class="mini-panel c">
+        <div class="mp-head"><div class="mp-dot c">⬡</div>Events</div>
+        <div class="mp-row">Auto Farm Joy (T) <div class="tog on-c"></div></div>
+        <div class="mp-row">Auto Fish <div class="tog"></div></div>
+      </div>
+    </div>
+
+    <!-- Panel: World -->
+    <div class="panel-wrap" id="panelD">
+      <div class="mini-panel c">
+        <div class="mp-head"><div class="mp-dot c">⬡</div>World</div>
+        <div class="mp-row">Void Mob <div class="tog"></div></div>
+        <div class="mp-row">Dumb Enemy <div class="tog on-c"></div></div>
+        <div class="mp-row">Auto Chest <div class="tog on-c"></div></div>
+        <div class="mp-row">Remove Kill Bricks <div class="tog"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ALL FEATURES -->
+<section class="all-features" id="features">
+  <div class="sh">
+    <div class="sh-tag">// every feature</div>
+    <h2 class="sh-title">Nothing hidden.<br>Everything listed.</h2>
+    <p class="sh-desc">Here's exactly what you're getting. No vague bullet points — every toggle, every hotkey, every tab.</p>
+  </div>
+
+  <!-- Player / Movement -->
+  <div class="feat-category">
+    <div class="feat-cat-label">// player & movement</div>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="feat-icon">🦅</div>
+        <div class="feat-name">Fly</div>
+        <div class="feat-desc">Float anywhere in the map. Fully adjustable speed. Bypass terrain, cliffs, and voids with ease.</div>
+        <div class="feat-key">Y key</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">⚡</div>
+        <div class="feat-name">Speedhack</div>
+        <div class="feat-desc">Move at any speed multiplier you set. Outrun everything in the game without detection.</div>
+        <div class="feat-key">N key</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🌀</div>
+        <div class="feat-name">Infinite Jump</div>
+        <div class="feat-desc">Jump as many times as you want mid-air. Height is fully adjustable. Reach anywhere vertically.</div>
+        <div class="feat-key">H key</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">👻</div>
+        <div class="feat-name">Noclip</div>
+        <div class="feat-desc">Walk through walls, floors, and map boundaries. Skip locked areas and transition zones instantly.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📍</div>
+        <div class="feat-name">Tween / Teleport</div>
+        <div class="feat-desc">Enter any coordinates and smoothly tween there. One button to copy your current position too.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🏃</div>
+        <div class="feat-name">Agility Spoofer</div>
+        <div class="feat-desc">Spoof your agility value to any number. Changes how your movement behaves server-side.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🩺</div>
+        <div class="feat-name">No Fall Damage</div>
+        <div class="feat-desc">Fall from literally anywhere without taking damage. Useful when flying or noclipping through vertical areas.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🪆</div>
+        <div class="feat-name">Auto Unragdoll</div>
+        <div class="feat-desc">Instantly recovers from the ragdoll state the moment it triggers. You stop getting knocked around.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Farm / Events -->
+  <div class="feat-category">
+    <div class="feat-cat-label">// farm & events</div>
+    <div class="feat-grid">
+      <div class="feat-card c-card">
+        <div class="feat-icon">🌟</div>
+        <div class="feat-name">Auto Farm Joy</div>
+        <div class="feat-desc">Automatically farms Joy in the background. Set it and leave — talent points keep rolling in while you're AFK.</div>
+        <div class="feat-key">T key</div>
+      </div>
+      <div class="feat-card c-card">
+        <div class="feat-icon">🎣</div>
+        <div class="feat-name">Auto Fish</div>
+        <div class="feat-desc">Fully automated fishing. Detects the minigame, completes it, and repeats. No user input needed.</div>
+      </div>
+      <div class="feat-card c-card">
+        <div class="feat-icon">📦</div>
+        <div class="feat-name">Auto Chest</div>
+        <div class="feat-desc">Opens chests automatically when you're in range. Never walk past loot again during a grind session.</div>
+      </div>
+      <div class="feat-card c-card">
+        <div class="feat-icon">💀</div>
+        <div class="feat-name">Void Mob</div>
+        <div class="feat-desc">Sends nearby mobs into the void instantly. Clear camps and farming spots without a single fight.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- World / Environment -->
+  <div class="feat-category">
+    <div class="feat-cat-label">// world & environment</div>
+    <div class="feat-grid">
+      <div class="feat-card c-card">
+        <div class="feat-icon">🤖</div>
+        <div class="feat-name">Dumb Enemy</div>
+        <div class="feat-desc">Makes enemies unable to target or attack you. Walk through hostile areas like they're empty. PvE becomes trivial.</div>
+      </div>
+      <div class="feat-card c-card">
+        <div class="feat-icon">🧲</div>
+        <div class="feat-name">Attach To Nearby Mobs</div>
+        <div class="feat-desc">Lock onto nearby mobs. Useful for tracking, farming setups, and controlling what you're targeting.</div>
+      </div>
+      <div class="feat-card c-card">
+        <div class="feat-icon">👥</div>
+        <div class="feat-name">Attach To Players</div>
+        <div class="feat-desc">Attach to nearby players or a specific selected player. Range, distance, and height all adjustable.</div>
+      </div>
+      <div class="feat-card c-card">
+        <div class="feat-icon">🧱</div>
+        <div class="feat-name">Remove Kill Bricks</div>
+        <div class="feat-desc">Deletes kill bricks from the game world client-side. Walk through zones that would normally kill you instantly.</div>
+      </div>
+      <div class="feat-card c-card">
+        <div class="feat-icon">🕳️</div>
+        <div class="feat-name">TP to Depths</div>
+        <div class="feat-desc">Teleport directly to the Depths. Skip the long route and drop straight in whenever you need to.</div>
+      </div>
+      <div class="feat-card c-card">
+        <div class="feat-icon">🗺️</div>
+        <div class="feat-name">TP to T01</div>
+        <div class="feat-desc">Instant teleport to the T01 location. One button, no running required.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ESP / Combat / Misc -->
+  <div class="feat-category">
+    <div class="feat-cat-label">// esp · combat · misc</div>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="feat-icon">👁️</div>
+        <div class="feat-name">ESP</div>
+        <div class="feat-desc">See players and mobs through walls. Know exactly who's around you and where before they see you.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🛡️</div>
+        <div class="feat-name">Auto Parry</div>
+        <div class="feat-desc">Detects incoming attacks and parries them automatically. Frame-perfect timing every single time.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📊</div>
+        <div class="feat-name">Stats Viewer</div>
+        <div class="feat-desc">Pull up detailed stats for players in your server. Useful for scouting threats before engaging.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🎨</div>
+        <div class="feat-name">No Animations</div>
+        <div class="feat-desc">Strips player animations. Can help with FPS or make certain movements less predictable to others.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">⚙️</div>
+        <div class="feat-name">UI Settings</div>
+        <div class="feat-desc">Customize the hub itself — move it around, resize it, change colors, and set it up exactly how you want.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔍</div>
+        <div class="feat-name">Search Bar</div>
+        <div class="feat-desc">Filter any feature by name instantly. Huge time saver when you have 30+ features loaded.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- EXECUTORS -->
+<section class="executors" id="executors">
+  <div class="sh">
+    <div class="sh-tag">// compatibility</div>
+    <h2 class="sh-title">Supported executors only.</h2>
+    <p class="sh-desc">CIEL is tested and confirmed working on three executors. Don't waste time trying others — just use one of these.</p>
+  </div>
+  <div class="exec-grid">
+    <div class="exec-card">
+      <div class="exec-badge">🌊</div>
+      <div class="exec-name">Wave</div>
+      <div class="exec-label">wave.executor</div>
+      <div class="exec-status">SUPPORTED</div>
+      <div class="exec-note">Recommended — most stable</div>
+    </div>
+    <div class="exec-card">
+      <div class="exec-badge">⚗️</div>
+      <div class="exec-name">Xeno</div>
+      <div class="exec-label">xeno executor</div>
+      <div class="exec-status">SUPPORTED</div>
+      <div class="exec-note">Works great, fast injection</div>
+    </div>
+    <div class="exec-card">
+      <div class="exec-badge">☀️</div>
+      <div class="exec-name">Solara</div>
+      <div class="exec-label">solara executor</div>
+      <div class="exec-status">SUPPORTED</div>
+      <div class="exec-note">Free option, works fine</div>
+    </div>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-size:13px;color:var(--dim);font-family:'JetBrains Mono',monospace;">
+    Other executors are NOT supported. If something breaks, this is usually why.
+  </p>
+</section>
+
+<div class="divider"></div>
+
+<!-- KEY SYSTEM -->
+<section class="keysys" id="keysystem">
+  <div class="keysys-inner">
+    <div class="sh" style="margin-bottom:0">
+      <div class="sh-tag">// key system</div>
+      <h2 class="sh-title">How the key system works.</h2>
+      <p class="sh-desc">CIEL uses Luarmor for key verification. Here's exactly how to get set up.</p>
+    </div>
+    <div class="keysys-grid">
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <div class="step-title">Join the Discord</div>
+            <div class="step-desc">Head to our Discord server. All key purchases, support, and updates happen there. It's free to join.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <div class="step-title">Purchase a key</div>
+            <div class="step-desc">Pick your tier in the shop channel. Keys are delivered automatically after payment. You'll get a string like <span style="font-family:'JetBrains Mono',monospace;color:var(--purple-lg);font-size:12px;">CIEL-XXXX-XXXX-XXXX</span>.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <div class="step-title">Open your executor</div>
+            <div class="step-desc">Launch Deepwoken, then open Wave, Xeno, or Solara. Paste the script into the execute tab.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-body">
+            <div class="step-title">Enter your key when prompted</div>
+            <div class="step-desc">The hub will open a key prompt on first run. Paste your key in, hit confirm. It'll be saved to your device after that.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">05</div>
+          <div class="step-body">
+            <div class="step-title">You're in</div>
+            <div class="step-desc">Full hub loads instantly. All features unlocked based on your tier. Key works until your subscription expires.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="keysys-right">
+        <div class="key-info-card highlight">
+          <h4>Each key is device-locked</h4>
+          <p>Keys are bound to your device on first use via Luarmor. You can't share them — one key, one machine. Need it reset? DM in Discord.</p>
+        </div>
+        <div class="key-info-card">
+          <h4>Keys expire with your plan</h4>
+          <p>Day keys expire after 24h, week keys after 7 days, etc. Lifetime keys never expire. Renew anytime in Discord.</p>
+        </div>
+        <div class="key-info-card">
+          <h4>Patches &amp; updates</h4>
+          <p>When Deepwoken updates and breaks something, the script gets patched on the server side. Your key still works — you don't need to do anything.</p>
+        </div>
+        <div class="key-info-card">
+          <h4>No refunds on keys</h4>
+          <p>All sales are final. Make sure you're using a supported executor before purchasing. Test with the free trial first if available.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- SCRIPT BOX -->
+<section class="script-section">
+  <div class="sh">
+    <div class="sh-tag">// the script</div>
+    <h2 class="sh-title">Copy. Paste. Execute.</h2>
+    <p class="sh-desc">One line. Paste it into Wave, Xeno, or Solara and hit execute. The hub loads automatically.</p>
+  </div>
+  <div class="script-box">
+    <div class="script-topbar">
+      <span>deepwoken.lua</span>
+      <button class="copy-btn" onclick="copyScript()">Copy</button>
+    </div>
+    <div class="script-code" id="scriptCode">loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/cc7ac810d41143f67683fb1c373c24dc.lua"))()</div>
+  </div>
+  <p class="script-note">
+    <strong>Requires a valid CIEL key</strong> — you'll be prompted on first run.<br>
+    Only works on <strong>Wave</strong>, <strong>Xeno</strong>, and <strong>Solara</strong>. Nothing else is supported.
+  </p>
+</section>
+
+<div class="divider"></div>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="sh">
+    <div class="sh-tag">// pricing</div>
+    <h2 class="sh-title">Pick your plan.</h2>
+    <p class="sh-desc">All tiers get the full script. Price is just how long the key lasts.</p>
+  </div>
+  <div class="pricing-grid">
+
+    <div class="p-card">
+      <div class="p-tier">// day</div>
+      <div class="p-price"><span class="cur">$</span>2</div>
+      <div class="p-period">24 hours</div>
+      <ul class="p-feats">
+        <li><span class="ck">✓</span> Full script access</li>
+        <li><span class="ck">✓</span> All features unlocked</li>
+        <li><span class="ck">✓</span> Device locked key</li>
+        <li class="off"><span class="ck">✗</span> Renewal discount</li>
+        <li class="off"><span class="ck">✗</span> Priority support</li>
+      </ul>
+      <a href="https://discord.gg/YOURLINK" class="p-btn" target="_blank">Try for a day</a>
+    </div>
+
+    <div class="p-card">
+      <div class="p-tier">// week</div>
+      <div class="p-price"><span class="cur">$</span>8</div>
+      <div class="p-period">7 days</div>
+      <ul class="p-feats">
+        <li><span class="ck">✓</span> Full script access</li>
+        <li><span class="ck">✓</span> All features unlocked</li>
+        <li><span class="ck">✓</span> Device locked key</li>
+        <li><span class="ck">✓</span> Renewal discount</li>
+        <li class="off"><span class="ck">✗</span> Priority support</li>
+      </ul>
+      <a href="https://discord.gg/YOURLINK" class="p-btn" target="_blank">Get week key</a>
+    </div>
+
+    <div class="p-card featured">
+      <div class="p-badge">POPULAR</div>
+      <div class="p-tier">// month</div>
+      <div class="p-price" style="background:linear-gradient(135deg,var(--purple-lg),var(--cyan-lg));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;"><span style="-webkit-text-fill-color:var(--muted);">$</span>20</div>
+      <div class="p-period">30 days</div>
+      <ul class="p-feats">
+        <li><span class="ck">✓</span> Full script access</li>
+        <li><span class="ck">✓</span> All features unlocked</li>
+        <li><span class="ck">✓</span> Device locked key</li>
+        <li><span class="ck">✓</span> Renewal discount</li>
+        <li><span class="ck">✓</span> Priority support</li>
+      </ul>
+      <a href="https://discord.gg/YOURLINK" class="p-btn feat" target="_blank">Get month key</a>
+    </div>
+
+    <div class="p-card">
+      <div class="p-tier">// lifetime</div>
+      <div class="p-price"><span class="cur">$</span>45</div>
+      <div class="p-period">Never expires</div>
+      <ul class="p-feats">
+        <li><span class="ck">✓</span> Full script access</li>
+        <li><span class="ck">✓</span> All features unlocked</li>
+        <li><span class="ck">✓</span> Device locked key</li>
+        <li><span class="ck">✓</span> All future updates</li>
+        <li><span class="ck">✓</span> Priority support</li>
+      </ul>
+      <a href="https://discord.gg/YOURLINK" class="p-btn" target="_blank">Get lifetime</a>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- REVIEWS -->
+<section class="reviews" id="reviews">
+  <div class="sh">
+    <div class="sh-tag">// what people say</div>
+    <h2 class="sh-title">From the community.</h2>
+  </div>
+  <div class="reviews-grid">
+    <div class="rev-card">
+      <div class="rev-stars">★★★★★</div>
+      <p class="rev-text">"Auto farm joy is actually crazy. I left it running overnight and woke up with enough points to finish my build. Script didn't crash once. Worth every cent."</p>
+      <div class="rev-author">
+        <div class="rev-av">KX</div>
+        <div>
+          <div class="rev-name">kxlei</div>
+          <div class="rev-handle">@kxlei · Month member</div>
+        </div>
+      </div>
+    </div>
+    <div class="rev-card">
+      <div class="rev-stars">★★★★★</div>
+      <p class="rev-text">"The auto parry is what sold me. I tested it against a friend who's actually good at PvP and it parried everything. Nobody knew I was scripting."</p>
+      <div class="rev-author">
+        <div class="rev-av">ZV</div>
+        <div>
+          <div class="rev-name">zvoid.rbx</div>
+          <div class="rev-handle">@zvoid · Lifetime member</div>
+        </div>
+      </div>
+    </div>
+    <div class="rev-card">
+      <div class="rev-stars">★★★★★</div>
+      <p class="rev-text">"Used it on Wave, no issues at all. The hub UI is clean, everything's labeled well, and the search bar makes it way faster to find stuff. Good script."</p>
+      <div class="rev-author">
+        <div class="rev-av">NY</div>
+        <div>
+          <div class="rev-name">nyx.exe</div>
+          <div class="rev-handle">@nyx · Week member</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="cta">
+  <div class="cta-glow"></div>
+  <h2>Stop grinding.<br><em>Start winning.</em></h2>
+  <p>Join the Discord, grab a key, and have CIEL running in your game in under 5 minutes.</p>
+  <a href="https://discord.gg/YOURLINK" class="btn-primary" target="_blank" style="font-size:16px;padding:17px 44px;">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.079.11 18.1.12 18.12a19.901 19.901 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+    Join Discord
+  </a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-logo">CIEL</div>
+  <span>© 2025 CIEL. Not affiliated with Roblox Corporation.</span>
+  <div class="foot-links">
+    <a href="#">Terms</a>
+    <a href="https://discord.gg/YOURLINK" target="_blank">Discord</a>
+  </div>
+</footer>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+/* ── PARTICLES ──────────────────────────────────────── */
+const cv = document.getElementById('particles');
+const cx = cv.getContext('2d');
+function rsz() { cv.width = innerWidth; cv.height = innerHeight; }
+rsz(); addEventListener('resize', rsz);
+
+const pts = Array.from({length:50}, () => ({
+  x: Math.random()*innerWidth, y: Math.random()*innerHeight,
+  r: Math.random()*1.3+0.3,
+  dx:(Math.random()-.5)*.25, dy:(Math.random()-.5)*.25,
+  h: Math.random()>.55 ? '#6d28d9' : '#0891b2',
+  a: Math.random()*.4+.07
+}));
+
+(function tick(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  pts.forEach(p=>{
+    p.x+=p.dx; p.y+=p.dy;
+    if(p.x<0)p.x=cv.width; if(p.x>cv.width)p.x=0;
+    if(p.y<0)p.y=cv.height; if(p.y>cv.height)p.y=0;
+    cx.beginPath(); cx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    cx.fillStyle=p.h+Math.floor(p.a*255).toString(16).padStart(2,'0');
+    cx.fill();
+  });
+  requestAnimationFrame(tick);
+})();
+
+/* ── DECOMPOSE ANIMATION ────────────────────────────── */
+const tl = gsap.timeline({
+  scrollTrigger:{
+    trigger:'#showcase', start:'top top', end:'+=260%',
+    scrub:1.3, pin:'#showcaseSticky'
+  }
+});
+
+tl.to('#beforeImg',{scale:.7,opacity:0,filter:'blur(5px)',duration:2.5,ease:'power2.inOut'},0);
+tl.to('#showcaseTag',{opacity:0,duration:.5},0);
+
+[
+  {id:'#panelA',x:-395,y:-200,r:-8},
+  {id:'#panelB',x:-375,y: 148,r: 5},
+  {id:'#panelC',x: 355,y:-158,r: 7},
+  {id:'#panelD',x: 335,y: 152,r:-5},
+].forEach(({id,x,y,r},i)=>{
+  tl.fromTo(id,
+    {opacity:0,x:0,y:0,scale:.55,rotation:0},
+    {opacity:1,x,y,scale:1,rotation:r,duration:2.8,ease:'power3.out'},
+    .2+i*.16
+  );
+});
+
+tl.add(()=>{
+  const el=document.getElementById('showcaseTag');
+  el.textContent='EVERY FEATURE. FULLY CONFIGURABLE.';
+  gsap.fromTo(el,{opacity:0},{opacity:1,duration:.4});
+},2.5);
+
+/* ── SCROLL FADE INS ────────────────────────────────── */
+gsap.utils.toArray('.feat-card,.rev-card,.exec-card,.key-info-card').forEach((el,i)=>{
+  gsap.from(el,{
+    scrollTrigger:{trigger:el,start:'top 90%'},
+    opacity:0, y:24, duration:.6, delay:(i%4)*.07, ease:'power2.out'
+  });
+});
+
+gsap.utils.toArray('.p-card').forEach((el,i)=>{
+  gsap.from(el,{
+    scrollTrigger:{trigger:el,start:'top 90%'},
+    opacity:0, y:22, scale:.97, duration:.65, delay:i*.1, ease:'power2.out'
+  });
+});
+
+gsap.utils.toArray('.sh,.step').forEach((el,i)=>{
+  gsap.from(el,{
+    scrollTrigger:{trigger:el,start:'top 88%'},
+    opacity:0, y:18, duration:.65, delay:i*.05, ease:'power2.out'
+  });
+});
+
+/* ── CURSOR GLOW ────────────────────────────────────── */
+const glow = document.getElementById('cursor-glow');
+let mx = -999, my = -999;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+(function glowTick(){
+  glow.style.left = mx + 'px';
+  glow.style.top  = my + 'px';
+  requestAnimationFrame(glowTick);
+})();
+
+/* ── COPY SCRIPT ────────────────────────────────────── */
+function copyScript(){
+  const code = document.getElementById('scriptCode').textContent.trim();
+  navigator.clipboard.writeText(code).then(()=>{
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent='Copied!';
+    btn.style.color='#4ade80';
+    btn.style.borderColor='rgba(74,222,128,0.3)';
+    setTimeout(()=>{ btn.textContent='Copy'; btn.style.color=''; btn.style.borderColor=''; },2000);
+  });
+}
+</script>
+
+</body>
+</html>
