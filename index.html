@@ -498,6 +498,139 @@
     .foot-links a { color: var(--dim); text-decoration: none; font-size: 12px; font-family: 'JetBrains Mono', monospace; transition: color 0.2s; }
     .foot-links a:hover { color: var(--muted); }
 
+    /* ── UI MOCKUP ───────────────────────────────────── */
+    .ui-mockup {
+      display: flex; width: 100%; height: 100%;
+      background: #0d0d12; font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: #c8c8d8; overflow: hidden;
+    }
+
+    /* Sidebar */
+    .ui-sidebar {
+      width: 148px; flex-shrink: 0;
+      background: #0a0a10; border-right: 1px solid rgba(255,255,255,0.06);
+      display: flex; flex-direction: column;
+    }
+    .ui-search {
+      padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.05);
+      display: flex; align-items: center; gap: 6px;
+      color: #3f4755; font-size: 10px;
+    }
+    .ui-search-plus {
+      margin-left: auto; color: #5a5f6e; font-size: 14px; line-height: 1;
+    }
+    .ui-nav { padding: 6px 0; flex: 1; overflow: hidden; }
+    .ui-nav-item {
+      padding: 6px 12px; display: flex; align-items: center; gap: 8px;
+      color: #7a8194; font-size: 10.5px; cursor: default;
+      border-left: 2px solid transparent;
+    }
+    .ui-nav-item.active {
+      color: #e0d0ff; background: rgba(109,40,217,0.15);
+      border-left-color: #7c22ff;
+    }
+    .ui-nav-icon { font-size: 11px; opacity: 0.7; }
+
+    /* Columns */
+    .ui-col {
+      flex: 1; padding: 0; overflow: hidden;
+      border-right: 1px solid rgba(255,255,255,0.04);
+    }
+    .ui-col:last-child { border-right: none; }
+
+    .ui-section { border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .ui-sec-head {
+      padding: 8px 12px; display: flex; align-items: center; gap: 7px;
+      font-size: 11px; font-weight: 700; color: #d0c8f0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.015);
+    }
+    .ui-sec-icon {
+      width: 15px; height: 15px; border-radius: 50%;
+      border: 1.5px solid #7c22ff; display: flex; align-items: center;
+      justify-content: center; font-size: 7px; color: #7c22ff;
+    }
+    .ui-sec-icon.c { border-color: #00e5ff; color: #00e5ff; }
+
+    .ui-row {
+      padding: 5px 12px; display: flex; align-items: center;
+      justify-content: space-between; font-size: 10px; color: #8892a4;
+      border-bottom: 1px solid rgba(255,255,255,0.025); gap: 6px;
+    }
+    .ui-row-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .ui-key {
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 3px; padding: 0 5px; font-size: 9px;
+      color: #6a7384; flex-shrink: 0;
+    }
+
+    .ui-tog {
+      width: 24px; height: 13px; border-radius: 8px;
+      background: rgba(255,255,255,0.08); flex-shrink: 0; position: relative;
+    }
+    .ui-tog::after {
+      content: ''; position: absolute; width: 9px; height: 9px;
+      background: #fff; border-radius: 50%; top: 2px; left: 2px;
+    }
+    .ui-tog.on   { background: #7c22ff; }
+    .ui-tog.on::after { left: 13px; }
+    .ui-tog.on-c { background: #00b8d4; }
+    .ui-tog.on-c::after { left: 13px; }
+
+    .ui-slider-wrap { padding: 2px 12px 6px; }
+    .ui-slider-bar {
+      height: 3px; background: rgba(255,255,255,0.06);
+      border-radius: 2px; overflow: hidden; position: relative;
+    }
+    .ui-slider-fill {
+      position: absolute; left: 0; top: 0; bottom: 0;
+      background: linear-gradient(90deg, #7c22ff, #00e5ff); border-radius: 2px;
+    }
+    .ui-slider-label {
+      font-size: 9.5px; color: #fff; text-align: center;
+      padding: 3px 0 1px; opacity: 0.9;
+    }
+
+    .ui-input-row { padding: 3px 12px 5px; }
+    .ui-input-box {
+      width: 100%; background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07); border-radius: 4px;
+      padding: 3px 7px; font-size: 10px; color: #5a6070;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .ui-full-btn {
+      margin: 3px 12px; padding: 4px; text-align: center;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 4px; font-size: 9.5px; color: #8892a4;
+    }
+
+    .ui-dropdown-wrap { padding: 3px 12px 5px; }
+    .ui-dropdown-box {
+      width: 100%; background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07); border-radius: 4px;
+      padding: 3px 7px; font-size: 10px; color: #5a6070;
+      display: flex; justify-content: space-between;
+    }
+
+    .ui-range-row { padding: 2px 12px; }
+    .ui-range-label { font-size: 9px; color: #5a6070; display: flex; justify-content: space-between; margin-bottom: 2px; }
+    .ui-range-track {
+      height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden;
+    }
+    .ui-range-fill {
+      height: 100%; background: #7c22ff; border-radius: 2px;
+    }
+    .ui-range-fill.c { background: #00b8d4; }
+
+    .ui-sm-btn-row { padding: 4px 12px; }
+    .ui-sm-btn {
+      width: 100%; padding: 4px; text-align: center;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 4px; font-size: 9.5px; color: #7a8194; margin-bottom: 3px;
+    }
+
     /* ── PARTICLES ───────────────────────────────────── */
     #particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
 
@@ -753,7 +886,96 @@
     <div class="showcase-tag" id="showcaseTag">↓ SCROLL TO EXPLORE</div>
 
     <div class="before-wrap" id="beforeImg">
-      <img src="before.png" alt="CIEL — Deepwoken hub" />
+      <div class="ui-mockup">
+        <!-- Sidebar -->
+        <div class="ui-sidebar">
+          <div class="ui-search">
+            <span>⌕</span><span>Search</span>
+            <span class="ui-search-plus">⊕</span>
+          </div>
+          <div class="ui-nav">
+            <div class="ui-nav-item"><span class="ui-nav-icon">◉</span>Main</div>
+            <div class="ui-nav-item"><span class="ui-nav-icon">◎</span>ESP</div>
+            <div class="ui-nav-item"><span class="ui-nav-icon">◈</span>Auto Parry</div>
+            <div class="ui-nav-item active"><span class="ui-nav-icon">▣</span>Stats Viewer</div>
+            <div class="ui-nav-item"><span class="ui-nav-icon">⚙</span>Settings</div>
+            <div class="ui-nav-item"><span class="ui-nav-icon">⬚</span>Debug</div>
+            <div class="ui-nav-item"><span class="ui-nav-icon">◻</span>SUS</div>
+            <div class="ui-nav-item"><span class="ui-nav-icon">⊞</span>UI Settings</div>
+          </div>
+        </div>
+
+        <!-- Middle column -->
+        <div class="ui-col">
+          <div class="ui-section">
+            <div class="ui-sec-head"><div class="ui-sec-icon">◈</div>Internal functions</div>
+            <div class="ui-row"><span class="ui-row-label">No Fall Damage</span><div class="ui-tog"></div></div>
+            <div class="ui-row"><span class="ui-row-label">Auto Unragdoll</span><div class="ui-tog"></div></div>
+          </div>
+          <div class="ui-section">
+            <div class="ui-sec-head"><div class="ui-sec-icon">◎</div>Player</div>
+            <div class="ui-row"><span class="ui-row-label">Coordinates</span></div>
+            <div class="ui-input-row"><div class="ui-input-box">&nbsp;</div></div>
+            <div class="ui-full-btn">Tween to</div>
+            <div class="ui-full-btn">Copy Current Position</div>
+            <div class="ui-row"><span class="ui-row-label">Fly</span><span class="ui-key">Y</span><div class="ui-tog"></div></div>
+            <div class="ui-slider-wrap">
+              <div class="ui-slider-label">Fly Speed: 100</div>
+              <div class="ui-slider-bar"><div class="ui-slider-fill" style="width:60%"></div></div>
+            </div>
+            <div class="ui-row"><span class="ui-row-label">Speedhack</span><span class="ui-key">N</span><div class="ui-tog"></div></div>
+            <div class="ui-slider-wrap">
+              <div class="ui-slider-label">Speedhack Speed: 100</div>
+              <div class="ui-slider-bar"><div class="ui-slider-fill" style="width:60%"></div></div>
+            </div>
+            <div class="ui-row"><span class="ui-row-label">Infinite Jump</span><span class="ui-key">H</span><div class="ui-tog"></div></div>
+            <div class="ui-slider-wrap">
+              <div class="ui-slider-label">InfiniteJump Height: 50</div>
+              <div class="ui-slider-bar"><div class="ui-slider-fill" style="width:30%"></div></div>
+            </div>
+            <div class="ui-row"><span class="ui-row-label">Noclip</span><div class="ui-tog"></div></div>
+            <div class="ui-row"><span class="ui-row-label">No Animations</span><div class="ui-tog"></div></div>
+            <div class="ui-row"><span class="ui-row-label">Agility Spoofer</span><div class="ui-tog"></div></div>
+            <div class="ui-row"><span class="ui-row-label">Auto Fish</span><div class="ui-tog"></div></div>
+          </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="ui-col">
+          <div class="ui-section">
+            <div class="ui-sec-head"><div class="ui-sec-icon c">⬡</div>Events</div>
+            <div class="ui-row"><span class="ui-row-label">Auto Farm Joy</span><span class="ui-key">T</span><div class="ui-tog on-c"></div></div>
+          </div>
+          <div class="ui-section">
+            <div class="ui-sec-head"><div class="ui-sec-icon c">⬡</div>World</div>
+            <div class="ui-row"><span class="ui-row-label">Void Mob</span><div class="ui-tog"></div></div>
+            <div class="ui-row"><span class="ui-row-label">Auto Chest</span><div class="ui-tog"></div></div>
+            <div class="ui-row"><span class="ui-row-label">Dumb Enemy</span><div class="ui-tog"></div></div>
+            <div class="ui-row"><span class="ui-row-label">Attach To Nearby Mobs</span><div class="ui-tog"></div></div>
+            <div class="ui-row"><span class="ui-row-label">Attach To Nearby Players</span><div class="ui-tog"></div></div>
+            <div class="ui-row"><span class="ui-row-label">Attach To Selected Player</span><div class="ui-tog"></div></div>
+            <div class="ui-row"><span class="ui-row-label">Players</span></div>
+            <div class="ui-dropdown-wrap"><div class="ui-dropdown-box"><span>---</span><span>∧</span></div></div>
+            <div class="ui-range-row">
+              <div class="ui-range-label"><span>Range</span><span>1000/10000</span></div>
+              <div class="ui-range-track"><div class="ui-range-fill" style="width:10%"></div></div>
+            </div>
+            <div class="ui-range-row">
+              <div class="ui-range-label"><span>Distance</span><span>0/50</span></div>
+              <div class="ui-range-track"><div class="ui-range-fill c" style="width:100%"></div></div>
+            </div>
+            <div class="ui-range-row">
+              <div class="ui-range-label"><span>Height</span><span>0/50</span></div>
+              <div class="ui-range-track"><div class="ui-range-fill c" style="width:100%"></div></div>
+            </div>
+            <div class="ui-row"><span class="ui-row-label">Remove Kill Bricks</span><div class="ui-tog"></div></div>
+            <div class="ui-sm-btn-row">
+              <div class="ui-sm-btn">TP to Depths</div>
+              <div class="ui-sm-btn">TP to T01</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Panel: Internal Functions -->
