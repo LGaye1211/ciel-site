@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTOO Cockpit — Technology &amp; Operations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+  :root{
+    /* surfaces — premium institutional navy */
+    --page:#070d18;
+    --plane:#0a1220;
+    --card:#0e1828;
+    --card-2:#111f33;
+    --card-h:#14243b;
+    /* ink */
+    --ink:#eaf0fb;
+    --ink-2:#aeb9cf;
+    --muted:#6f7d97;
+    --dim:#465269;
+    /* accents */
+    --blue:#3d8bf0;
+    --blue-lg:#6fb0ff;
+    --gold:#c9ac6b;         /* Pictet-ish refined warm accent */
+    --gold-lg:#e4cf9a;
+    /* status (validated dataviz palette) */
+    --good:#12b26a;
+    --warn:#fab219;
+    --serious:#ec835a;
+    --crit:#d84545;
+    /* lines */
+    --grid:#1a2740;
+    --border:rgba(255,255,255,0.06);
+    --border-2:rgba(120,160,220,0.14);
+  }
+
+  html{scroll-behavior:smooth}
+  body{
+    background:
+      radial-gradient(1100px 600px at 12% -8%, rgba(61,139,240,0.10), transparent 60%),
+      radial-gradient(900px 520px at 92% -4%, rgba(201,172,107,0.06), transparent 55%),
+      var(--page);
+    color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:64px;
+  }
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:#1c2b45;border-radius:6px}
+  ::-webkit-scrollbar-thumb:hover{background:#26395a}
+
+  .mono{font-family:'JetBrains Mono',monospace}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  /* ── TOP BAR ─────────────────────────────────────────── */
+  header{
+    position:sticky;top:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;
+    gap:24px;padding:14px 32px;
+    background:rgba(8,14,24,0.82);
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-bottom:1px solid var(--border);
+  }
+  .brand{display:flex;align-items:center;gap:16px;min-width:0}
+  .mark{
+    width:38px;height:38px;border-radius:9px;flex:none;
+    background:linear-gradient(150deg,#12233d,#0b1626);
+    border:1px solid var(--border-2);
+    display:grid;place-items:center;position:relative;overflow:hidden;
+  }
+  .mark::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 20%,rgba(111,176,255,.25),transparent 60%)}
+  .mark span{font-family:'JetBrains Mono';font-weight:700;font-size:16px;letter-spacing:.02em;
+    background:linear-gradient(135deg,var(--blue-lg),var(--gold-lg));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;position:relative;z-index:1}
+  .brand-txt{min-width:0}
+  .brand-txt .l1{font-size:14px;font-weight:700;letter-spacing:.16em}
+  .brand-txt .l1 b{color:var(--gold-lg);font-weight:700}
+  .brand-txt .l2{font-size:11px;color:var(--muted);letter-spacing:.28em;text-transform:uppercase;margin-top:1px}
+
+  .topmeta{display:flex;align-items:center;gap:22px;flex-wrap:wrap;justify-content:flex-end}
+  .mkts{display:flex;gap:14px}
+  .mkt{text-align:right;line-height:1.15}
+  .mkt .c{font-size:10px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+  .mkt .s{font-size:11px;font-weight:600;display:flex;align-items:center;gap:5px;justify-content:flex-end}
+  .mkt .s.open{color:var(--good)}
+  .mkt .s.closed{color:var(--dim)}
+  .clock{text-align:right}
+  .clock .t{font-size:19px;font-weight:600;letter-spacing:.02em}
+  .clock .d{font-size:10.5px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+  .refresh{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-2);
+    border:1px solid var(--border-2);border-radius:100px;padding:6px 13px}
+  .refresh .dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 rgba(18,178,106,.5);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(18,178,106,.45)}70%{box-shadow:0 0 0 7px rgba(18,178,106,0)}100%{box-shadow:0 0 0 0 rgba(18,178,106,0)}}
+
+  /* ── PAGE TITLE ROW ─────────────────────────────────── */
+  .titlebar{padding:26px 32px 6px;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+  .titlebar h1{font-size:23px;font-weight:700;letter-spacing:-.01em}
+  .titlebar h1 span{color:var(--muted);font-weight:400}
+  .titlebar .who{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .titlebar .who b{color:var(--ink-2);font-weight:600}
+  .illus{font-size:10.5px;color:var(--dim);border:1px dashed var(--border-2);border-radius:6px;padding:5px 11px;letter-spacing:.04em}
+
+  main{padding:8px 32px 0;max-width:1680px;margin:0 auto}
+
+  /* ── PULSE RIBBON ───────────────────────────────────── */
+  .pulse{
+    display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin:16px 0 8px;
+  }
+  .pk{
+    background:linear-gradient(180deg,var(--card-2),var(--card));
+    border:1px solid var(--border);border-radius:14px;padding:14px 15px 13px;position:relative;overflow:hidden;
+    transition:border-color .2s,transform .2s;
+  }
+  .pk:hover{border-color:var(--border-2);transform:translateY(-2px)}
+  .pk::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--st,var(--blue))}
+  .pk .lab{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .pk .val{font-size:27px;font-weight:700;letter-spacing:-.02em;margin-top:9px;line-height:1}
+  .pk .val small{font-size:14px;font-weight:600;color:var(--ink-2)}
+  .pk .sub{font-size:11px;color:var(--muted);margin-top:7px;display:flex;align-items:center;gap:6px}
+  .pk .sub .up{color:var(--good)}.pk .sub .dn{color:var(--crit)}
+
+  .stdot{width:8px;height:8px;border-radius:50%;flex:none;box-shadow:0 0 8px 0 var(--st)}
+
+  /* ── ZONES ──────────────────────────────────────────── */
+  .zone{margin:30px 0 4px}
+  .zone-h{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+  .zone-n{font-family:'JetBrains Mono';font-size:12px;color:var(--gold);border:1px solid var(--border-2);border-radius:7px;padding:3px 9px;letter-spacing:.05em}
+  .zone-h h2{font-size:15.5px;font-weight:700;letter-spacing:.01em}
+  .zone-h p{font-size:12px;color:var(--muted)}
+  .zone-h .line{flex:1;height:1px;background:linear-gradient(90deg,var(--border-2),transparent)}
+
+  .grid{display:grid;gap:14px}
+  .g-3{grid-template-columns:repeat(3,1fr)}
+  .g-4{grid-template-columns:repeat(4,1fr)}
+  .g-2{grid-template-columns:repeat(2,1fr)}
+  .g-res{grid-template-columns:2fr 1fr 1fr}
+
+  .card{
+    background:linear-gradient(180deg,var(--card-2),var(--card));
+    border:1px solid var(--border);border-radius:15px;padding:17px 18px;position:relative;
+    transition:border-color .2s;
+  }
+  .card:hover{border-color:var(--border-2)}
+  .card-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .card-h .t{font-size:13px;font-weight:600;color:var(--ink)}
+  .card-h .s{font-size:11px;color:var(--muted);margin-top:2px}
+  .card-h .badge{font-size:10.5px;font-weight:600;letter-spacing:.03em;padding:4px 10px;border-radius:100px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+
+  /* status pills */
+  .pill{font-size:10.5px;font-weight:600;letter-spacing:.03em;padding:3px 9px;border-radius:100px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+  .pill .d{width:6px;height:6px;border-radius:50%}
+  .p-good{background:rgba(18,178,106,.13);color:#4fd99b}.p-good .d{background:var(--good)}
+  .p-warn{background:rgba(250,178,25,.13);color:#f6c85a}.p-warn .d{background:var(--warn)}
+  .p-ser{background:rgba(236,131,90,.14);color:#f0a181}.p-ser .d{background:var(--serious)}
+  .p-crit{background:rgba(216,69,69,.15);color:#f28080}.p-crit .d{background:var(--crit)}
+  .p-info{background:rgba(61,139,240,.13);color:var(--blue-lg)}.p-info .d{background:var(--blue)}
+
+  /* big metric inside card */
+  .metric{display:flex;align-items:baseline;gap:9px}
+  .metric .m{font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1}
+  .metric .u{font-size:14px;color:var(--ink-2);font-weight:600}
+  .metric .delta{font-size:12px;font-weight:600}
+  .delta.up{color:var(--good)}.delta.dn{color:var(--crit)}.delta.flat{color:var(--muted)}
+
+  .spark{width:100%;height:38px;display:block;margin-top:12px}
+
+  /* gauges row */
+  .gaugerow{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .gauge{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .gauge svg{transform:rotate(-90deg)}
+  .gauge .glab{font-size:11px;color:var(--muted);text-align:center;letter-spacing:.02em}
+  .gauge .gval{font-size:15px;font-weight:700}
+
+  /* platform list */
+  .plist{display:flex;flex-direction:column;gap:2px}
+  .prow{display:grid;grid-template-columns:1.4fr auto auto;align-items:center;gap:12px;padding:9px 6px;border-radius:8px;transition:background .15s}
+  .prow:hover{background:var(--card-h)}
+  .prow+.prow{border-top:1px solid var(--grid)}
+  .prow .nm{font-size:12.5px;font-weight:500}
+  .prow .nm small{display:block;font-size:10.5px;color:var(--muted);font-weight:400;margin-top:1px}
+  .prow .up{font-size:12px;font-weight:600;text-align:right}
+  .barmini{width:96px;height:6px;border-radius:4px;background:var(--grid);overflow:hidden;position:relative}
+  .barmini i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+
+  /* incident list */
+  .inc{display:flex;flex-direction:column;gap:9px}
+  .irow{display:flex;align-items:center;gap:11px;padding:10px 11px;background:var(--card);border:1px solid var(--grid);border-radius:10px}
+  .irow .sev{font-family:'JetBrains Mono';font-size:11px;font-weight:600;padding:3px 7px;border-radius:6px;flex:none}
+  .sev.p1{background:rgba(216,69,69,.16);color:#f28080}
+  .sev.p2{background:rgba(236,131,90,.15);color:#f0a181}
+  .sev.p3{background:rgba(250,178,25,.14);color:#f6c85a}
+  .irow .id{font-size:12.5px;font-weight:600}
+  .irow .de{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .irow .age{margin-left:auto;text-align:right;font-size:11px;color:var(--ink-2);white-space:nowrap}
+  .irow .age b{display:block;font-size:13px;font-weight:700;color:var(--ink)}
+
+  /* aging bars (settlement fails) */
+  .aging{display:flex;flex-direction:column;gap:11px;margin-top:4px}
+  .abar{display:grid;grid-template-columns:60px 1fr 40px;align-items:center;gap:10px}
+  .abar .lb{font-size:11px;color:var(--muted);text-align:right}
+  .abar .tr{height:20px;background:var(--grid);border-radius:5px;overflow:hidden}
+  .abar .tr i{display:block;height:100%;border-radius:5px}
+  .abar .vn{font-size:12px;font-weight:600;text-align:right}
+
+  /* recon / kv stat pairs */
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .kvc{background:var(--card);border:1px solid var(--grid);border-radius:11px;padding:12px 13px}
+  .kvc .k{font-size:11px;color:var(--muted);letter-spacing:.02em}
+  .kvc .v{font-size:23px;font-weight:700;margin-top:6px;line-height:1;display:flex;align-items:baseline;gap:7px}
+  .kvc .v .t{font-size:11px;font-weight:600}
+  .kvc .v .t.up{color:var(--good)}.kvc .v .t.dn{color:var(--crit)}
+
+  /* programme portfolio (RAG board) */
+  .prog{display:flex;flex-direction:column;gap:0}
+  .pgrow{display:grid;grid-template-columns:1.7fr .8fr 96px 64px;align-items:center;gap:12px;padding:10px 6px}
+  .pgrow+.pgrow{border-top:1px solid var(--grid)}
+  .pgrow:hover{background:var(--card-h)}
+  .pgrow .pn{font-size:12.5px;font-weight:500}
+  .pgrow .pn small{display:block;font-size:10.5px;color:var(--muted);margin-top:1px}
+  .pgrow .own{font-size:11px;color:var(--ink-2)}
+  .pgbar{height:6px;background:var(--grid);border-radius:4px;overflow:hidden}
+  .pgbar i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--blue-lg));border-radius:4px}
+  .pgrow .pct{font-size:11.5px;font-weight:600;text-align:right}
+
+  /* budget burn */
+  .burn{margin-top:6px}
+  .burn .track{height:30px;border-radius:9px;background:var(--grid);overflow:hidden;display:flex;position:relative}
+  .burn .track i{height:100%;display:flex;align-items:center;padding-left:10px;font-size:11px;font-weight:600;white-space:nowrap}
+  .burn .seg-a{background:linear-gradient(90deg,#1c5cab,#3d8bf0)}
+  .burn .seg-b{background:repeating-linear-gradient(45deg,#16233a,#16233a 6px,#122036 6px,#122036 12px)}
+  .burn .plan{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--gold);box-shadow:0 0 8px var(--gold)}
+  .burn .plan span{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--gold-lg);white-space:nowrap}
+  .burn .legend{display:flex;gap:18px;margin-top:12px;font-size:11px;color:var(--muted);flex-wrap:wrap}
+  .burn .legend b{color:var(--ink);font-weight:600}
+  .burn .legend .sw{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px}
+
+  /* people stats */
+  .ppl{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}
+
+  /* regulatory / risk timeline */
+  .reg{display:flex;flex-direction:column;gap:0}
+  .rgrow{display:flex;align-items:center;gap:12px;padding:11px 6px}
+  .rgrow+.rgrow{border-top:1px solid var(--grid)}
+  .rgrow .cal{width:44px;flex:none;text-align:center;background:var(--card);border:1px solid var(--grid);border-radius:8px;padding:5px 0}
+  .rgrow .cal .mo{font-size:9.5px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+  .rgrow .cal .dy{font-size:16px;font-weight:700;line-height:1.1}
+  .rgrow .rn{font-size:12.5px;font-weight:500}
+  .rgrow .rn small{display:block;font-size:10.5px;color:var(--muted);margin-top:1px}
+  .rgrow .rt{margin-left:auto}
+
+  /* op-risk mini */
+  .oprisk{display:flex;flex-direction:column;gap:10px;margin-top:2px}
+  .oprow{display:flex;align-items:center;gap:10px;font-size:12px}
+  .oprow .dt{width:9px;height:9px;border-radius:50%;flex:none}
+  .oprow .ol{flex:1}
+  .oprow .ov{font-weight:700}
+
+  .foot{max-width:1680px;margin:34px auto 0;padding:22px 32px 0;border-top:1px solid var(--border);
+    display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--dim)}
+  .foot b{color:var(--muted);font-weight:600}
+
+  @media(max-width:1380px){
+    .pulse{grid-template-columns:repeat(4,1fr)}
+    .g-4{grid-template-columns:repeat(2,1fr)}
+    .g-res{grid-template-columns:1fr 1fr}
+  }
+  @media(max-width:900px){
+    header{flex-wrap:wrap;gap:12px}
+    .pulse{grid-template-columns:repeat(2,1fr)}
+    .g-3,.g-2,.g-res{grid-template-columns:1fr}
+    main{padding:8px 18px 0}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="mark"><span>P</span></div>
+    <div class="brand-txt">
+      <div class="l1">PICTET · <b>ASSET MANAGEMENT</b></div>
+      <div class="l2">Technology &amp; Operations</div>
+    </div>
+  </div>
+  <div class="topmeta">
+    <div class="mkts">
+      <div class="mkt"><div class="c">Zurich</div><div class="s open" id="mkt-zrh">● Open</div></div>
+      <div class="mkt"><div class="c">London</div><div class="s open" id="mkt-lon">● Open</div></div>
+      <div class="mkt"><div class="c">New York</div><div class="s closed" id="mkt-nyc">● Pre</div></div>
+    </div>
+    <div class="clock"><div class="t mono" id="clock">--:--:--</div><div class="d" id="date">—</div></div>
+    <div class="refresh"><span class="dot"></span> Live · <span id="ago">refreshed now</span></div>
+  </div>
+</header>
+
+<div class="titlebar">
+  <div>
+    <h1>Executive Cockpit <span>— single pane of glass</span></h1>
+    <div class="who">Owner <b>Chief Technology &amp; Operations Officer</b> · Portfolio: Technology, Operations, Cyber, Delivery, Op-Risk</div>
+  </div>
+  <div class="illus">Illustrative data · representative of firm scale</div>
+</div>
+
+<main>
+
+  <!-- ═══ PULSE RIBBON ═══ -->
+  <div class="pulse">
+    <div class="pk" style="--st:var(--good)">
+      <div class="lab"><span class="stdot" style="--st:var(--good)"></span>Firm Status</div>
+      <div class="val">Stable</div>
+      <div class="sub">All critical services nominal</div>
+    </div>
+    <div class="pk" style="--st:var(--blue)">
+      <div class="lab">AUM Serviced</div>
+      <div class="val">268.4<small> bn</small></div>
+      <div class="sub"><span class="up">▲ 1.9%</span> QTD · CHF · 342 funds</div>
+    </div>
+    <div class="pk" style="--st:var(--serious)">
+      <div class="lab">Open Incidents</div>
+      <div class="val">1<small> P1</small> · 3<small> P2</small></div>
+      <div class="sub">P1 ETA 40m · MIM engaged</div>
+    </div>
+    <div class="pk" style="--st:var(--good)">
+      <div class="lab">NAV On-Time</div>
+      <div class="val">99.7<small>%</small></div>
+      <div class="sub">340 struck · 2 pending · 0 breached</div>
+    </div>
+    <div class="pk" style="--st:var(--good)">
+      <div class="lab">STP Rate</div>
+      <div class="val">96.4<small>%</small></div>
+      <div class="sub"><span class="up">▲ 0.6pt</span> vs 30-day avg</div>
+    </div>
+    <div class="pk" style="--st:var(--warn)">
+      <div class="lab">Cyber Threat</div>
+      <div class="val">Elevated</div>
+      <div class="sub">2 active campaigns tracked</div>
+    </div>
+    <div class="pk" style="--st:var(--good)">
+      <div class="lab">DORA Resilience</div>
+      <div class="val">On&nbsp;Track</div>
+      <div class="sub">92% controls attested</div>
+    </div>
+  </div>
+
+  <!-- ═══ ZONE 2 — RESILIENCE ═══ -->
+  <section class="zone">
+    <div class="zone-h">
+      <span class="zone-n">01</span>
+      <div><h2>Operational Resilience &amp; Service Health</h2><p>Critical platform availability, live incidents &amp; change risk — framed to DORA</p></div>
+      <div class="line"></div>
+    </div>
+    <div class="grid g-res">
+
+      <div class="card">
+        <div class="card-h">
+          <div><div class="t">Critical Platform Availability</div><div class="s">Rolling 30-day uptime vs SLA (99.9%)</div></div>
+          <span class="pill p-good"><span class="d"></span>Within SLA</span>
+        </div>
+        <div class="plist" id="platforms"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div><div class="t">Live Incidents</div><div class="s">Major incident management</div></div>
+          <span class="pill p-ser"><span class="d"></span>1 active P1</span>
+        </div>
+        <div class="inc">
+          <div class="irow"><span class="sev p1">P1</span><div><div class="id">INC-40218</div><div class="de">Market-data latency · APAC gateway</div></div><div class="age"><b>0h 52m</b>ETA 40m</div></div>
+          <div class="irow"><span class="sev p2">P2</span><div><div class="id">INC-40201</div><div class="de">Client portal — intermittent 5xx</div></div><div class="age"><b>3h 11m</b>mitigated</div></div>
+          <div class="irow"><span class="sev p2">P2</span><div><div class="id">INC-40195</div><div class="de">Batch delay · reference data load</div></div><div class="age"><b>5h 40m</b>monitoring</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div><div class="t">Change &amp; Resilience</div><div class="s">This week</div></div>
+        </div>
+        <div class="gaugerow" style="justify-content:space-around">
+          <div class="gauge" data-gauge data-pct="98.1" data-color="good"><div class="glab">SLA<br>adherence</div></div>
+          <div class="gauge" data-gauge data-pct="4.2" data-color="warn" data-max="20"><div class="glab">Change-fail<br>rate</div></div>
+        </div>
+        <div class="kv" style="margin-top:16px">
+          <div class="kvc"><div class="k">RTO recovery test</div><div class="v">1.4<span class="t">h</span></div></div>
+          <div class="kvc"><div class="k">Backlog · critical patches</div><div class="v">6</div></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ ZONE 3 — TRADE & FUND OPS ═══ -->
+  <section class="zone">
+    <div class="zone-h">
+      <span class="zone-n">02</span>
+      <div><h2>Trade &amp; Fund Operations</h2><p>Trade lifecycle, NAV production, reconciliation &amp; corporate actions</p></div>
+      <div class="line"></div>
+    </div>
+    <div class="grid g-4">
+
+      <div class="card">
+        <div class="card-h"><div><div class="t">Settlement Rate</div><div class="s">T+0 · today</div></div></div>
+        <div class="metric"><div class="m">98.9<span class="u">%</span></div><div class="delta up">▲ 0.3pt</div></div>
+        <svg class="spark" data-spark="98.2,98.5,98.1,98.6,98.4,98.7,98.9" data-color="blue"></svg>
+        <div class="s" style="font-size:11px;color:var(--muted)">42 fails open · CHF 61m exposure</div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="t">STP Rate</div><div class="s">Straight-through processing</div></div></div>
+        <div class="metric"><div class="m">96.4<span class="u">%</span></div><div class="delta up">▲ 0.6pt</div></div>
+        <svg class="spark" data-spark="95.1,95.4,95.2,95.8,96.0,96.1,96.4" data-color="good"></svg>
+        <div class="s" style="font-size:11px;color:var(--muted)">Target 97.0% · trending to plan</div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="t">Reconciliation Breaks</div><div class="s">Cash &amp; position · aged</div></div><span class="pill p-warn"><span class="d"></span>7 aged</span></div>
+        <div class="kv">
+          <div class="kvc"><div class="k">Cash breaks</div><div class="v">18 <span class="t dn">▲ 4</span></div></div>
+          <div class="kvc"><div class="k">Position breaks</div><div class="v">7 <span class="t up">▼ 2</span></div></div>
+        </div>
+        <div class="s" style="font-size:11px;color:var(--muted);margin-top:11px">2 breaks &gt; 5 days — escalated to ops lead</div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="t">Corporate Actions</div><div class="s">Live queue</div></div><span class="pill p-ser"><span class="d"></span>3 at risk</span></div>
+        <div class="metric"><div class="m">214</div><div class="delta flat">in flight</div></div>
+        <svg class="spark" data-spark="180,196,205,190,208,214" data-color="gold"></svg>
+        <div class="s" style="font-size:11px;color:var(--muted)">198 mandatory · 16 voluntary · 3 election deadline &lt;24h</div>
+      </div>
+
+      <div class="card" style="grid-column:span 2">
+        <div class="card-h"><div><div class="t">NAV Production Board</div><div class="s">342 funds · valuation point CET 18:00</div></div><span class="pill p-good"><span class="d"></span>99.7% on-time</span></div>
+        <div class="gaugerow" style="justify-content:space-between">
+          <div class="gauge" data-gauge data-pct="99.7" data-color="good" data-size="118"><div class="glab">On-time<br>today</div></div>
+          <div style="flex:1;display:grid;grid-template-columns:repeat(2,1fr);gap:11px">
+            <div class="kvc"><div class="k">Struck &amp; released</div><div class="v" style="color:var(--good)">340</div></div>
+            <div class="kvc"><div class="k">Pending valuation</div><div class="v" style="color:var(--warn)">2</div></div>
+            <div class="kvc"><div class="k">NAV breaches (MTD)</div><div class="v">1</div></div>
+            <div class="kvc"><div class="k">Pricing exceptions</div><div class="v">9</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column:span 2">
+        <div class="card-h"><div><div class="t">Settlement Fails — Aging</div><div class="s">Open fails by age bucket · CHF exposure</div></div></div>
+        <div class="aging">
+          <div class="abar"><div class="lb">T+0</div><div class="tr"><i style="width:66%;background:var(--good)"></i></div><div class="vn">24</div></div>
+          <div class="abar"><div class="lb">T+1</div><div class="tr"><i style="width:33%;background:var(--warn)"></i></div><div class="vn">11</div></div>
+          <div class="abar"><div class="lb">T+2</div><div class="tr"><i style="width:14%;background:var(--serious)"></i></div><div class="vn">5</div></div>
+          <div class="abar"><div class="lb">T+3&nbsp;+</div><div class="tr"><i style="width:6%;background:var(--crit)"></i></div><div class="vn">2</div></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ ZONE 4 — CYBER & TECH RISK ═══ -->
+  <section class="zone">
+    <div class="zone-h">
+      <span class="zone-n">03</span>
+      <div><h2>Cybersecurity &amp; Technology Risk</h2><p>Threat posture, vulnerability management &amp; control assurance</p></div>
+      <div class="line"></div>
+    </div>
+    <div class="grid g-4">
+
+      <div class="card">
+        <div class="card-h"><div><div class="t">Threat Level</div><div class="s">Sector-informed</div></div></div>
+        <div class="metric"><div class="m" style="font-size:26px;color:var(--warn)">Elevated</div></div>
+        <div class="s" style="font-size:11.5px;color:var(--ink-2);margin-top:12px;line-height:1.6">2 active phishing campaigns targeting finance sector · 0 confirmed compromise · SOC at heightened watch</div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="t">Critical Vulnerabilities</div><div class="s">Open · CVSS ≥ 9.0</div></div><span class="pill p-crit"><span class="d"></span>4 open</span></div>
+        <div class="metric"><div class="m">4</div><div class="delta up">▼ 3 wk</div></div>
+        <svg class="spark" data-spark="11,9,8,7,5,4" data-color="good"></svg>
+        <div class="s" style="font-size:11px;color:var(--muted)">Patch SLA 92% · 2 within remediation window</div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="t">Phishing Simulation</div><div class="s">Firm-wide · latest wave</div></div></div>
+        <div class="metric"><div class="m">3.1<span class="u">%</span></div><div class="delta up">▼ 1.4pt</div></div>
+        <svg class="spark" data-spark="6.2,5.5,4.8,4.1,3.1" data-color="good"></svg>
+        <div class="s" style="font-size:11px;color:var(--muted)">Click rate · target &lt;4% · report rate 71%</div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="t">Control Assurance</div><div class="s">Audit &amp; pen-test findings</div></div></div>
+        <div class="gaugerow" style="justify-content:space-around">
+          <div class="gauge" data-gauge data-pct="88" data-color="blue"><div class="glab">Findings<br>closed</div></div>
+        </div>
+        <div class="s" style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">3 high open · 0 overdue</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ ZONE 5 — DELIVERY & TRANSFORMATION ═══ -->
+  <section class="zone">
+    <div class="zone-h">
+      <span class="zone-n">04</span>
+      <div><h2>Delivery &amp; Transformation</h2><p>Strategic programme portfolio, engineering throughput &amp; the top bets</p></div>
+      <div class="line"></div>
+    </div>
+    <div class="grid g-res">
+
+      <div class="card" style="grid-column:span 1">
+        <div class="card-h"><div><div class="t">Strategic Programme Portfolio</div><div class="s">12 programmes · RAG &amp; % complete</div></div><span class="pill p-warn"><span class="d"></span>2 amber · 1 red</span></div>
+        <div class="prog">
+          <div class="pgrow"><div class="pn">Aladdin migration — Phase 2<small>Front-to-back consolidation</small></div><div class="own">Ops Tech</div><div class="pgbar"><i style="width:64%"></i></div><div class="pct">64%</div></div>
+          <div class="pgrow"><div class="pn">Cloud landing zone<small>Azure · regulated workloads</small></div><div class="own">Platform</div><div class="pgbar"><i style="width:81%"></i></div><div class="pct">81%</div></div>
+          <div class="pgrow"><div class="pn">AI ops copilots<small>Recon &amp; CA automation</small></div><div class="own">Data/AI</div><div class="pgbar"><i style="width:38%"></i></div><div class="pct">38%</div></div>
+          <div class="pgrow"><div class="pn">DORA remediation<small>Resilience &amp; third-party</small></div><div class="own">Risk Tech</div><div class="pgbar"><i style="width:72%"></i></div><div class="pct">72%</div></div>
+          <div class="pgrow"><div class="pn">Data platform · lakehouse<small>Golden-source IBOR</small></div><div class="own">Data/AI</div><div class="pgbar"><i style="width:55%"></i></div><div class="pct">55%</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="t">Engineering Throughput</div><div class="s">Releases / week</div></div></div>
+        <div class="metric"><div class="m">37</div><div class="delta up">▲ 12%</div></div>
+        <svg class="spark" data-spark="28,31,29,33,35,34,37" data-color="blue"></svg>
+        <div class="kv" style="margin-top:14px">
+          <div class="kvc"><div class="k">Lead time (median)</div><div class="v">2.6<span class="t">d</span></div></div>
+          <div class="kvc"><div class="k">Change-fail rate</div><div class="v">4.2<span class="t">%</span></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="t">Programme RAG Summary</div><div class="s">Health distribution</div></div></div>
+        <div class="oprisk" style="margin-top:6px">
+          <div class="oprow"><span class="dt" style="background:var(--good)"></span><span class="ol">On track (Green)</span><span class="ov">9</span></div>
+          <div class="oprow"><span class="dt" style="background:var(--warn)"></span><span class="ol">At risk (Amber)</span><span class="ov">2</span></div>
+          <div class="oprow"><span class="dt" style="background:var(--crit)"></span><span class="ol">Off track (Red)</span><span class="ov">1</span></div>
+        </div>
+        <div style="height:1px;background:var(--grid);margin:14px 0"></div>
+        <div class="s" style="font-size:11.5px;color:var(--ink-2);line-height:1.6"><b style="color:var(--crit)">Red:</b> AI ops copilots — model validation gating go-live; steering review Thu.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ ZONE 6 — COST, PEOPLE & RISK ═══ -->
+  <section class="zone">
+    <div class="zone-h">
+      <span class="zone-n">05</span>
+      <div><h2>Cost, People &amp; Risk</h2><p>Budget &amp; FinOps, organisation health, operational risk &amp; regulatory clock</p></div>
+      <div class="line"></div>
+    </div>
+    <div class="grid g-4">
+
+      <div class="card" style="grid-column:span 2">
+        <div class="card-h"><div><div class="t">Technology &amp; Operations Budget</div><div class="s">FY26 · CHF 214m · vs plan at mid-year</div></div><span class="pill p-good"><span class="d"></span>On budget</span></div>
+        <div class="burn">
+          <div class="track">
+            <i class="seg-a" style="width:53%">CHF 114m spent</i>
+            <i class="seg-b" style="width:47%"></i>
+            <div class="plan" style="left:54.5%"><span>plan 54.5%</span></div>
+          </div>
+          <div class="legend">
+            <span><span class="sw" style="background:#3d8bf0"></span><b>53%</b> utilised</span>
+            <span><span class="sw" style="background:#16233a"></span>Remaining <b>CHF 100m</b></span>
+            <span><span class="sw" style="background:var(--gold)"></span>Plan line — <b>0.4% under</b></span>
+          </div>
+        </div>
+        <div class="kv" style="margin-top:16px;grid-template-columns:repeat(3,1fr)">
+          <div class="kvc"><div class="k">Cloud spend (MTD)</div><div class="v" style="font-size:20px">CHF 3.2m <span class="t dn" style="font-size:10px">▲ 6%</span></div></div>
+          <div class="kvc"><div class="k">Cost per trade</div><div class="v" style="font-size:20px">CHF 2.14 <span class="t up" style="font-size:10px">▼ 8%</span></div></div>
+          <div class="kvc"><div class="k">Run vs change</div><div class="v" style="font-size:20px">62 / 38</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="t">Organisation Health</div><div class="s">T&amp;O division</div></div></div>
+        <div class="ppl">
+          <div class="kvc"><div class="k">Headcount</div><div class="v" style="font-size:22px">1,184</div></div>
+          <div class="kvc"><div class="k">Open roles</div><div class="v" style="font-size:22px">47</div></div>
+          <div class="kvc"><div class="k">Attrition (12m)</div><div class="v" style="font-size:22px">8.2<span class="t">%</span></div></div>
+          <div class="kvc"><div class="k">Engagement</div><div class="v" style="font-size:22px">78<span class="t up">▲2</span></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="t">Operational Risk</div><div class="s">Events &amp; losses · MTD</div></div><span class="pill p-good"><span class="d"></span>Below appetite</span></div>
+        <div class="metric" style="margin-bottom:12px"><div class="m" style="font-size:28px">6</div><div class="delta flat">events · CHF 0.4m</div></div>
+        <div class="oprisk">
+          <div class="oprow"><span class="dt" style="background:var(--serious)"></span><span class="ol">Processing error</span><span class="ov">3</span></div>
+          <div class="oprow"><span class="dt" style="background:var(--warn)"></span><span class="ol">System / IT</span><span class="ov">2</span></div>
+          <div class="oprow"><span class="dt" style="background:var(--blue)"></span><span class="ol">Third-party / vendor</span><span class="ov">1</span></div>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column:span 2">
+        <div class="card-h"><div><div class="t">Regulatory &amp; Assurance Clock</div><div class="s">Upcoming obligations &amp; attestations</div></div></div>
+        <div class="reg">
+          <div class="rgrow"><div class="cal"><div class="mo">Jul</div><div class="dy">31</div></div><div><div class="rn">EMIR Refit — trade reporting attestation<small>Regulatory reporting</small></div></div><div class="rt"><span class="pill p-good"><span class="d"></span>On track</span></div></div>
+          <div class="rgrow"><div class="cal"><div class="mo">Aug</div><div class="dy">15</div></div><div><div class="rn">DORA — ICT third-party register submission<small>Operational resilience</small></div></div><div class="rt"><span class="pill p-warn"><span class="d"></span>At risk</span></div></div>
+          <div class="rgrow"><div class="cal"><div class="mo">Sep</div><div class="dy">01</div></div><div><div class="rn">Internal audit — trade lifecycle controls<small>Assurance</small></div></div><div class="rt"><span class="pill p-info"><span class="d"></span>Planned</span></div></div>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column:span 2">
+        <div class="card-h"><div><div class="t">Vendor &amp; Outsourcing Oversight</div><div class="s">Critical service providers · SLA &amp; concentration</div></div><span class="pill p-good"><span class="d"></span>All within SLA</span></div>
+        <div class="plist">
+          <div class="prow"><div class="nm">Global Custodian<small>Settlement &amp; safekeeping</small></div><div class="up" style="color:var(--good)">99.6%</div><div class="barmini"><i style="width:96%;background:var(--good)"></i></div></div>
+          <div class="prow"><div class="nm">Fund Administrator<small>NAV &amp; transfer agency</small></div><div class="up" style="color:var(--good)">99.2%</div><div class="barmini"><i style="width:92%;background:var(--good)"></i></div></div>
+          <div class="prow"><div class="nm">Market Data Vendor<small>Pricing &amp; reference</small></div><div class="up" style="color:var(--warn)">97.8%</div><div class="barmini"><i style="width:78%;background:var(--warn)"></i></div></div>
+          <div class="prow"><div class="nm">Cloud Provider<small>Regulated workloads</small></div><div class="up" style="color:var(--good)">99.99%</div><div class="barmini"><i style="width:99%;background:var(--good)"></i></div></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="foot">
+    <div>Illustrative executive cockpit · figures are <b>representative mock data</b> for design purposes, not actual Pictet reporting.</div>
+    <div>Refresh cadence <b>live / 5-min</b> · Sources: ITSM · IBOR · SOC · PPM · FinOps · GRC</div>
+  </div>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ── live clock (Zurich / CET-ish) ── */
+  function tick(){
+    var now = new Date();
+    var pad = function(n){return (n<10?'0':'')+n;};
+    var c = document.getElementById('clock');
+    var d = document.getElementById('date');
+    if(c) c.textContent = pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+    if(d) d.textContent = now.toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).toUpperCase()+' · CET';
+  }
+  tick(); setInterval(tick,1000);
+
+  /* ── "refreshed X ago" ── */
+  var t0 = Date.now();
+  setInterval(function(){
+    var s = Math.floor((Date.now()-t0)/1000);
+    var el = document.getElementById('ago');
+    if(!el) return;
+    el.textContent = s<5 ? 'refreshed now' : 'refreshed '+s+'s ago';
+    if(s>=300) t0 = Date.now();
+  },1000);
+
+  /* ── sparklines ── */
+  var colorMap = {blue:'#5ea0ff',good:'#2fd48a',gold:'#dcc07f',warn:'#f6c85a',crit:'#f28080'};
+  document.querySelectorAll('svg[data-spark]').forEach(function(svg){
+    var vals = svg.getAttribute('data-spark').split(',').map(Number);
+    var col = colorMap[svg.getAttribute('data-color')] || colorMap.blue;
+    var W = 240, H = 38, pad = 3;
+    var min = Math.min.apply(null,vals), max = Math.max.apply(null,vals);
+    var rng = (max-min)||1;
+    var step = (W-pad*2)/(vals.length-1);
+    var pts = vals.map(function(v,i){
+      var x = pad + i*step;
+      var y = pad + (H-pad*2) * (1 - (v-min)/rng);
+      return [x,y];
+    });
+    var d = pts.map(function(p,i){return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join(' ');
+    var area = d + ' L'+pts[pts.length-1][0].toFixed(1)+' '+H+' L'+pts[0][0].toFixed(1)+' '+H+' Z';
+    var uid = 'g'+Math.floor(pts[0][1]*1000)+vals.length;
+    svg.setAttribute('viewBox','0 0 '+W+' '+H);
+    svg.setAttribute('preserveAspectRatio','none');
+    var last = pts[pts.length-1];
+    svg.innerHTML =
+      '<defs><linearGradient id="'+uid+'" x1="0" y1="0" x2="0" y2="1">'+
+      '<stop offset="0" stop-color="'+col+'" stop-opacity="0.28"/>'+
+      '<stop offset="1" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs>'+
+      '<path d="'+area+'" fill="url(#'+uid+')"/>'+
+      '<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'+
+      '<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="3" fill="'+col+'"/>';
+  });
+
+  /* ── radial gauges ── */
+  var gCol = {good:'#12b26a',warn:'#fab219',blue:'#3d8bf0',crit:'#d84545',serious:'#ec835a'};
+  document.querySelectorAll('[data-gauge]').forEach(function(g){
+    var pct = parseFloat(g.getAttribute('data-pct'));
+    var max = parseFloat(g.getAttribute('data-max')||'100');
+    var size = parseFloat(g.getAttribute('data-size')||'92');
+    var col = gCol[g.getAttribute('data-color')] || gCol.blue;
+    var r = (size/2)-8, C = 2*Math.PI*r;
+    var frac = Math.max(0,Math.min(1,pct/max));
+    var off = C*(1-frac);
+    var label = g.querySelector('.glab');
+    var svg =
+      '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+
+      '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="#1a2740" stroke-width="8"/>'+
+      '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="8" '+
+      'stroke-linecap="round" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+C.toFixed(1)+'" '+
+      'style="transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)" class="ga"/></svg>';
+    var wrap = document.createElement('div');
+    wrap.style.position='relative';wrap.style.width=size+'px';wrap.style.height=size+'px';
+    wrap.innerHTML = svg +
+      '<div style="position:absolute;inset:0;display:grid;place-items:center"><span class="gval" style="color:'+col+'">'+
+      (max===100?pct+'%':pct)+'</span></div>';
+    g.insertBefore(wrap, label);
+    // animate
+    requestAnimationFrame(function(){ setTimeout(function(){
+      var c = wrap.querySelector('.ga'); if(c) c.setAttribute('stroke-dashoffset', off.toFixed(1));
+    },120);});
+  });
+
+  /* ── platform availability rows ── */
+  var platforms = [
+    ['Order &amp; Execution (OMS)','Trading',99.98,'good'],
+    ['Portfolio Management (PMS)','Front office',99.95,'good'],
+    ['Market Data &amp; Pricing','Reference',99.82,'warn'],
+    ['IBOR / Accounting','Middle office',99.97,'good'],
+    ['Client Portal','Distribution',99.71,'warn'],
+    ['Data Lakehouse','Analytics',99.99,'good']
+  ];
+  var host = document.getElementById('platforms');
+  if(host){
+    platforms.forEach(function(p){
+      var col = p[3]==='good'?'#12b26a':(p[3]==='warn'?'#fab219':'#d84545');
+      var w = Math.max(4,(p[2]-99.5)/0.5*100); // scale 99.5–100 → 0–100%
+      var row = document.createElement('div');
+      row.className='prow';
+      row.innerHTML =
+        '<div class="nm">'+p[0]+'<small>'+p[1]+'</small></div>'+
+        '<div class="up" style="color:'+col+'">'+p[2].toFixed(2)+'%</div>'+
+        '<div class="barmini"><i style="width:'+w.toFixed(0)+'%;background:'+col+'"></i></div>';
+      host.appendChild(row);
+    });
+  }
+})();
+</script>
+</body>
+</html>
