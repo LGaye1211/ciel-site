@@ -339,6 +339,27 @@
     .qrow{grid-template-columns:38px minmax(240px,1fr) 120px 190px 72px}
   }
 
+  /* ── BUY TICKET ─────────────────────────────────────── */
+  .tik{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tik label{display:block;font-size:11px;font-weight:600;color:var(--ink-2)}
+  .tik label .sub{font-weight:400}
+  .tik input{width:100%;margin-top:4px;padding:10px;border-radius:9px;
+    border:1px solid var(--border);background:var(--inset);color:var(--ink);
+    font-family:'JetBrains Mono',monospace;font-size:14px}
+  .tik input:focus{outline:none;border-color:var(--gold)}
+
+  /* ── PORTFOLIO ──────────────────────────────────────── */
+  .hold{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;
+    padding:12px 0;border-bottom:1px solid var(--border)}
+  .hold:last-child{border-bottom:0}
+  .hold h3{font-size:13.5px;margin-bottom:2px}
+  .hold .num{text-align:right;white-space:nowrap}
+  .hold .num b{font-family:'JetBrains Mono',monospace;font-size:15px;display:block}
+  .totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:12px;
+    padding:12px 0 4px}
+  .totals b{font-family:'JetBrains Mono',monospace;font-size:17px;display:block;color:var(--ink)}
+  .up{color:var(--good)} .down{color:var(--crit)}
+
   /* ── ASK — the Claude panel ─────────────────────────
      A bottom sheet rather than a sidebar, because the phone is the primary
      surface and a sidebar at 390px is a full-screen takeover with extra steps.
@@ -433,6 +454,9 @@
   <div class="hrow">
     <div class="brand">CIEL <span>· SLEEVE</span></div>
     <div class="hspace"></div>
+    <button class="iconbtn" id="liveBtn" title="Live" aria-label="Live"></button>
+    <button class="iconbtn" id="pfBtn" title="Portfolio" aria-label="Portfolio"></button>
+    <button class="iconbtn" id="monthBtn" title="This month" aria-label="This month"></button>
     <button class="iconbtn" id="reviewBtn" title="Reviews" aria-label="Reviews"></button>
     <button class="iconbtn" id="setBtn" title="Settings" aria-label="Settings"></button>
     <button class="iconbtn" id="themeBtn" title="Theme" aria-label="Toggle theme"></button>
@@ -496,6 +520,7 @@
     chat:'<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-4-.9L3 21l2-4a8.4 8.4 0 0 1-1-4 8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 7.4Z"/>',
     send:'<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/>',
     close:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    wallet:'<path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v2"/><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a1 1 0 0 0-1-1H5a2 2 0 0 1-2-2Z"/><path d="M17 13h.01"/>',
     key:'<circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 8.3-8.3"/><path d="m17 6 2.5 2.5"/><path d="m14.5 8.5 2.5 2.5"/>'
   };
   function svg(n,c){return '<svg '+(c?'class="'+c+'" ':'')+'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(ICON[n]||'')+'</svg>';}
@@ -525,6 +550,9 @@
       'not a current valuation.">'+label+' cap</span>';
   }
   function num(v,d){return v==null||isNaN(v)?'—':v.toFixed(d==null?0:d);}
+  function round2(v){return (v==null||isNaN(v))?null:Math.round(v*100)/100;}
+  function chf(v,d){return v==null||isNaN(v)?'—':'CHF '+Number(v).toLocaleString('en-CH',
+    {minimumFractionDigits:d==null?0:d,maximumFractionDigits:d==null?0:d});}
 
   /* ── STATE ──────────────────────────────────────────── */
   var M=null, L=null, POS=null, CHARTER=null, COSTS=null;
@@ -583,17 +611,74 @@
     }).catch(function(){});
   }
 
-  /* ── COST GATE (dossier 4.3 / 4.4) ──────────────────── */
+  /* ── PRICES ─────────────────────────────────────────
+     Fetched by the scanner and committed, so the page reads them same-origin
+     and no key ever reaches the device. Absent until a feed is configured, and
+     everything downstream is written to work without them: a portfolio with no
+     prices still knows what you put in, what you own and what the filings say,
+     which is most of what the charter actually asks for. */
+  var PX=null;
+  function priceFor(slug){
+    if(!PX||!PX.prices)return null;
+    var p=PX.prices[slug];
+    return (p&&p.close!=null)?p:null;
+  }
+  function fxToChf(cur){
+    if(!cur||cur==='CHF')return 1;
+    var r=PX&&PX.fx&&PX.fx[cur];
+    return (typeof r==='number'&&r>0)?r:null;
+  }
+  /* Value of a holding in CHF, or null when it genuinely cannot be known.
+     Returning the cost basis as a stand-in would render a flat P&L that looks
+     like a measurement and is not one. */
+  function valueChf(pos){
+    var p=priceFor(pos.slug);
+    if(!p||!pos.shares)return null;
+    var rate=fxToChf(p.currency||'USD');
+    if(rate==null)return null;
+    return pos.shares*p.close*rate;
+  }
+
+  /* ── COST GATE (dossier 4.3 / 4.4) ────────────────────
+     Broker figures are editable, because whether this gate can ever be passed
+     depends entirely on them and they vary by more than an order of magnitude
+     between Swiss brokers. With the defaults below - a 0.5% currency spread -
+     foreign stamp duty and FX alone come to 0.65% of any order, which is above
+     the dossier's 0.5% ceiling before a single franc of commission. No order of
+     any size clears it: the proportional part never dilutes, so a million-franc
+     order fails by the same margin as a thousand-franc one. Since every company
+     in this universe is a US listing, that made the sleeve unbuyable by
+     construction, and it stayed hidden for as long as the cost panel merely
+     displayed a specimen order instead of gating on it. */
+  var BKEY='ciel-sleeve-broker';
+  function brokerCosts(){
+    var c=COSTS||{};
+    var base={stamp_duty_swiss:c.stamp_duty_swiss!=null?c.stamp_duty_swiss:0.00075,
+      stamp_duty_foreign:c.stamp_duty_foreign!=null?c.stamp_duty_foreign:0.0015,
+      brokerage_flat_chf:c.brokerage_flat_chf!=null?c.brokerage_flat_chf:9,
+      fx_spread_pct:c.fx_spread_pct!=null?c.fx_spread_pct:0.005,
+      max_total_cost_pct:c.max_total_cost_pct!=null?c.max_total_cost_pct:0.005,
+      min_order_chf:c.min_order_chf!=null?c.min_order_chf:500};
+    try{
+      var saved=JSON.parse(localStorage.getItem(BKEY)||'null');
+      if(saved){
+        if(saved.brokerage_flat_chf>=0)base.brokerage_flat_chf=saved.brokerage_flat_chf;
+        if(saved.fx_spread_pct>=0)base.fx_spread_pct=saved.fx_spread_pct;
+      }
+    }catch(e){}
+    return base;
+  }
   function orderCost(amountChf,foreign){
-    var c=COSTS||{stamp_duty_swiss:0.00075,stamp_duty_foreign:0.0015,
-      brokerage_flat_chf:9,fx_spread_pct:0.005,max_total_cost_pct:0.005,min_order_chf:500};
-    var stamp=amountChf*(foreign?c.stamp_duty_foreign:c.stamp_duty_swiss);
-    var fx=foreign?amountChf*c.fx_spread_pct:0;
-    var total=stamp+fx+c.brokerage_flat_chf;
+    var c=brokerCosts();
+    var rate=(foreign?c.stamp_duty_foreign+c.fx_spread_pct:c.stamp_duty_swiss);
+    var total=amountChf*rate+c.brokerage_flat_chf;
+    // Only the flat component dilutes with size. When the proportional part
+    // already exceeds the ceiling, no order clears it and saying so beats
+    // printing the negative number the naive formula produces.
+    var headroom=c.max_total_cost_pct-rate;
     return {total:total,pct:total/amountChf,limit:c.max_total_cost_pct,
-            // Smallest order where flat brokerage stops dominating the ratio.
-            minClearing:Math.ceil(c.brokerage_flat_chf/
-              (c.max_total_cost_pct-(foreign?c.stamp_duty_foreign+c.fx_spread_pct:c.stamp_duty_swiss))/50)*50};
+            proportional:rate,reachable:headroom>0,
+            minClearing:headroom>0?Math.ceil(c.brokerage_flat_chf/headroom/50)*50:null};
   }
 
   /* ── THEME ──────────────────────────────────────────── */
@@ -608,6 +693,12 @@
   if(tbtn)tbtn.addEventListener('click',function(){
     var n=curTheme()==='dark'?'light':'dark';
     try{localStorage.setItem(TKEY,n);}catch(e){} setTheme(n);});
+  $('#liveBtn').innerHTML=svg('up');
+  $('#liveBtn').addEventListener('click',function(){location.hash='#/live';});
+  $('#pfBtn').innerHTML=svg('wallet');
+  $('#pfBtn').addEventListener('click',function(){location.hash='#/portfolio';});
+  $('#monthBtn').innerHTML=svg('clock');
+  $('#monthBtn').addEventListener('click',function(){location.hash='#/month';});
   $('#reviewBtn').innerHTML=svg('book');
   $('#reviewBtn').addEventListener('click',function(){location.hash='#/review';});
   $('#setBtn').innerHTML=svg('shield');
@@ -1054,25 +1145,35 @@
         'that matters most is the thing we know least about here — weigh the rest accordingly.</p></div></section>';
     }
 
-    // Cost gate: dossier 4.4 puts the bar at total costs below 0.5% of the
-    // amount invested, with CHF 500-1,000 minimum orders. Foreign stamp duty is
-    // double the Swiss rate and an FX leg applies.
+    /* The buy ticket. Costs are computed on the amount actually being put in,
+       not on a nominal CHF 1,000 - the 0.5% bar in dossier 4.4 is a ratio, and
+       a flat CHF 9 brokerage is 1.8% of CHF 500 and 0.45% of CHF 2,000. Quoting
+       a fixed specimen order would have hidden exactly the case the rule is
+       there to catch. */
     var foreign=!(d.exchanges||[]).some(function(x){return /six|swiss/i.test(x);});
-    var cost=orderCost(COSTS?COSTS.recommended_order_chf:1000,foreign);
-    h+='<div class="card reveal" style="margin-top:14px"><h3>What an order would cost</h3>'+
-      '<div style="display:flex;gap:18px;flex-wrap:wrap">'+
-        '<div><b class="tnum" style="font-size:16px">CHF '+num(cost.total,2)+'</b>'+
-          '<div class="sub">on a CHF '+(COSTS?COSTS.recommended_order_chf:1000)+' order</div></div>'+
-        '<div><b class="tnum" style="font-size:16px;color:'+
-          (cost.pct<=cost.limit?'var(--good)':'var(--crit)')+'">'+pct(cost.pct,2)+'</b>'+
-          '<div class="sub">of the amount, limit '+pct(cost.limit,1)+'</div></div>'+
+    var px=priceFor(d.slug);
+    var startAmount=(held&&held.amount_chf)||(COSTS?COSTS.recommended_order_chf:1000);
+    h+='<div class="card reveal" id="ticket" data-foreign="'+(foreign?'1':'0')+
+        '" data-cur="'+esc(px?px.currency:'USD')+'" style="margin-top:14px">'+
+      '<h3>'+(held?'Adjust the holding':'Buy — on paper')+'</h3>'+
+      '<p class="sub" style="line-height:1.6;margin-bottom:12px">Nothing here places a real order. '+
+      'It records what you put in and at what price, so the sleeve behaves as though you had '+
+      'bought, and every later review measures against it.</p>'+
+      '<div class="tik">'+
+        '<label>Amount <span class="sub">CHF</span>'+
+          '<input id="buyAmount" type="number" inputmode="decimal" min="0" step="50" value="'+
+            num(startAmount,0)+'"></label>'+
+        '<label>Price paid <span class="sub">'+esc(px?px.currency:'per share')+'</span>'+
+          '<input id="buyPrice" type="number" inputmode="decimal" min="0" step="0.01" value="'+
+            ((held&&held.price_paid)||(px&&px.close)||'')+'"'+
+            (px?'':' placeholder="enter it yourself"')+'></label>'+
       '</div>'+
-      '<p class="sub" style="margin-top:9px;line-height:1.55">'+
-      (foreign?'Foreign security: 0.15% stamp duty plus an FX leg.'
-             :'Swiss security: 0.075% stamp duty, no FX leg.')+
-      (cost.pct>cost.limit?' <b style="color:var(--crit)">Above the 0.5% bar — an order of about CHF '+
-        cost.minClearing+' would clear it.</b>':'')+
-      '</p></div>';
+      (px?'<p class="sub" style="margin-top:7px">Last close '+esc(px.currency)+' '+num(px.close,2)+
+          ' on '+esc(px.date)+'. Editable — use what you would actually pay.</p>'
+        :'<p class="sub" style="margin-top:7px;color:var(--warn)">No price feed connected, so type '+
+          'the price yourself. Settings explains how to switch one on.</p>')+
+      '<div id="ticketOut" style="margin-top:12px"></div>'+
+      '</div>';
 
     h+='<div class="accept">'+
       '<div class="conf" id="conf">'+[1,2,3,4,5].map(function(n){
@@ -1094,26 +1195,58 @@
   function livePosition(slug){
     return ((L&&L.companies)||[]).filter(function(c){return c.slug===slug;})[0]||null;
   }
+  /* A trigger the scan cannot evaluate is reported as such rather than
+     skipped. The first version dropped any metric missing from the queue row
+     and any `is_true` predicate straight onto the floor, so a position saying
+     "5 triggers armed" was in fact watching three: going-concern and
+     debt-to-equity were never published in latest.json and silently did
+     nothing. A safety mechanism that reports itself armed while being
+     incapable of firing is worse than no mechanism, because it is trusted. */
   function checkTriggers(pos){
     var live=livePosition(pos.slug);
-    if(!live)return {fired:[],near:[],stale:true};
+    if(!live)return {fired:[],near:[],unchecked:[],stale:true};
     // Map the queue row back onto the metric names the triggers reference.
     var now={gross_margin:live.gross_margin,revenue_growth_yoy:live.revenue_growth,
-      dilution_yoy:live.dilution,runway_months:live.cash_flow_positive?999:live.runway_months};
-    var fired=[],near=[];
+      dilution_yoy:live.dilution,debt_to_equity:live.debt_to_equity,
+      runway_months:live.cash_flow_positive?999:live.runway_months};
+    var fired=[],near=[],unchecked=[];
     (pos.triggers||[]).forEach(function(t){
+      // Going-concern doubt is a hard disqualifier in the scan, so a company
+      // that develops it leaves the universe entirely. It surfaces as the
+      // position dropping out of the scan, never as this trigger firing.
+      if(t.comparison==='is_true'){
+        unchecked.push({t:t,why:'not a published figure — this one shows up as the '+
+          'company dropping out of the scan, because it is a hard disqualifier'});
+        return;
+      }
       var v=now[t.metric];
-      if(v==null||t.comparison==='is_true')return;
+      if(v==null){
+        unchecked.push({t:t,why:'this figure is not in the current scan output'});
+        return;
+      }
       var hit=t.comparison==='below'?v<t.threshold:v>t.threshold;
       var margin=t.threshold?Math.abs(v-t.threshold)/Math.abs(t.threshold):1;
       if(hit)fired.push({t:t,v:v});
       else if(margin<0.2)near.push({t:t,v:v,margin:margin});
     });
-    return {fired:fired,near:near,stale:false,live:live};
+    return {fired:fired,near:near,unchecked:unchecked,stale:false,live:live};
   }
+  /* States what is actually being watched, not what was armed. */
+  function watchedCount(pos,state){
+    var total=(pos.triggers||[]).length;
+    if(state.stale)return total+' triggers armed, none checkable';
+    var blind=(state.unchecked||[]).length;
+    return blind ? (total-blind)+' of '+total+' triggers checked this scan'
+                 : total+' triggers checked this scan';
+  }
+
   function fmtMetric(metric,v){
     if(v==null)return '—';
     if(metric==='runway_months')return num(v)+' months';
+    // Debt to equity is a multiple, not a proportion. Formatted as a
+    // percentage it read "now 950.0%" against a threshold shown as "1.00",
+    // which is the same number stated two incompatible ways.
+    if(metric==='debt_to_equity')return num(v,2)+'×';
     return pct(v);
   }
 
@@ -1136,7 +1269,7 @@
           '<h3>'+esc(p.name||s)+(p.ticker?' <span class="mono sub">'+esc(p.ticker)+'</span>':'')+'</h3>'+
           '<div class="sub">accepted '+esc((p.accepted_at||'').slice(0,10))+
           ' at confidence '+esc(p.confidence||'—')+'/5 · '+(isNaN(days)?'':days+' days held')+
-          ' · '+((p.triggers||[]).length)+' triggers armed</div>';
+          ' · '+watchedCount(p,state)+'</div>';
 
         if(state.stale){
           h+='<p class="sub" style="margin-top:9px;color:var(--warn)">Not in the latest scan — it may '+
@@ -1163,6 +1296,17 @@
           }).join('')+'</div>';
         }else{
           h+='<p class="sub" style="margin-top:9px;color:var(--good)">No trigger near firing.</p>';
+        }
+
+        // Named individually, because "3 of 5 checked" invites the assumption
+        // that the other two are merely quiet.
+        if((state.unchecked||[]).length){
+          h+='<details style="margin-top:9px"><summary class="sub" style="cursor:pointer;color:var(--warn)">'+
+            state.unchecked.length+' trigger'+(state.unchecked.length>1?'s':'')+
+            ' cannot be checked automatically</summary><ul class="gaps" style="margin-top:6px">'+
+            state.unchecked.map(function(u){
+              return '<li>'+esc(u.t.label)+' — '+esc(u.why)+'</li>';
+            }).join('')+'</ul></details>';
         }
 
         // Calibration replay — Appendix B's retrospective, reconstructed.
@@ -1198,6 +1342,478 @@
       'tool exists to answer honestly. The dossier expects the answer to be no.</p></div>';
     h+='</section>';
     return h;
+  }
+
+  /* ── LIVE ───────────────────────────────────────────
+     Refreshed every sixty seconds, which is as literal as "live" can honestly
+     be made here. The page really does re-read the feed each minute; what it
+     cannot do is make the world produce news each minute. A company files
+     once, and the file only changes when something is filed - so the clock is
+     the app's, and the content is reality's.
+
+     Ordered by how much the item deserves your attention, which is close to
+     the reverse of how a news app would order it. New registrations first,
+     because an S-1 is filed weeks before a share can be bought and is the only
+     genuinely early signal available free. Policy second, because a rule
+     changes what a business is worth and this is the primary document rather
+     than a headline about it. Headlines last, because a price absorbs news in
+     milliseconds and anything readable here has already been paid for. */
+  var LIVE=null,liveTimer=null;
+  function loadLive(){
+    return fetch(DATA+'live.json?t='+Date.now())
+      .then(function(r){return r.ok?r.json():null;})
+      .catch(function(){return null;});
+  }
+  function stopLive(){if(liveTimer){clearInterval(liveTimer);liveTimer=null;}}
+  function startLive(){
+    stopLive();
+    liveTimer=setInterval(function(){
+      if(location.hash!=='#/live'){stopLive();return;}
+      // Repainting only on change keeps a half-read headline from jumping away
+      // under your thumb every minute.
+      loadLive().then(function(d){
+        if(!d)return;
+        if(JSON.stringify(d)===JSON.stringify(LIVE)){touchLiveClock();return;}
+        LIVE=d;var v=$('#view');
+        if(location.hash==='#/live'){v.innerHTML=renderLive();hydrate();}
+      });
+    },60000);
+  }
+  function touchLiveClock(){
+    var el=$('#liveClock');
+    if(el)el.textContent='checked '+new Date().toLocaleTimeString();
+  }
+
+  function renderLive(){
+    var d=LIVE||{};
+    var h='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('clock')+'</span>'+
+      '<div><h2>Live</h2><p>Rechecked every minute · <span id="liveClock">'+
+      esc(d.asof||'loading')+'</span></p></div><div class="line"></div></div>';
+
+    h+='<div class="standing" style="margin:0 0 14px">Nothing on this screen is scored, and none '+
+      'of it reaches the research queue — that is still built from filings alone. Ordered by how '+
+      'much each item deserves your attention, which is roughly the reverse of a news app.</div>';
+
+    var listings=d.listings||[];
+    h+='<div class="card reveal"><h3>Coming to market</h3>'+
+      '<p class="sub" style="line-height:1.6;margin-bottom:10px">A company files an <b>S-1</b> to '+
+      'register an offering, usually weeks before its shares trade, then a <b>424B4</b> once the '+
+      'price is set. This is the earliest anything is knowable: before the S-1 there is nothing '+
+      'published and nothing to buy. These are not in the queue — they have no reporting history '+
+      'yet, so there is nothing to score. Read the prospectus.</p>';
+    h+=listings.length
+      ? listings.slice(0,18).map(function(r){
+          return '<div class="hold"><div><h3 style="font-size:12.5px">'+esc(r.name)+'</h3>'+
+            '<div class="sub">'+esc(r.meaning)+'</div></div>'+
+            '<div class="num"><b style="font-size:12px">'+esc(r.form)+'</b>'+
+            '<span class="sub">'+esc(r.filed)+(r.url?' · <a href="'+esc(r.url)+
+            '" target="_blank" rel="noopener">read ↗</a>':'')+'</span></div></div>';
+        }).join('')
+      : '<p class="sub">Nothing new filed.</p>';
+    h+='</div>';
+
+    var rules=d.policy||[];
+    h+='<div class="card reveal" style="margin-top:12px"><h3>Policy</h3>'+
+      '<p class="sub" style="line-height:1.6;margin-bottom:10px">Rules and proposed rules as '+
+      'issued, from the Federal Register itself rather than reporting about it. A tariff or a '+
+      'safety standard genuinely changes what a business is worth. A speech about one usually '+
+      'does not — and by the time it is broadcast the price has moved, which is why the document '+
+      'is here and the speech is not.</p>';
+    h+=rules.length
+      ? rules.slice(0,10).map(function(r){
+          return '<div class="hold"><div><h3 style="font-size:12.5px">'+
+            (r.url?'<a href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.title)+'</a>'
+                  :esc(r.title))+'</h3>'+
+            '<div class="sub">'+esc(r.agency||'')+'</div></div>'+
+            '<div class="num"><b style="font-size:11px">'+esc(r.kind)+'</b>'+
+            '<span class="sub">'+esc(r.date)+'</span></div></div>';
+        }).join('')
+      : '<p class="sub">Nothing published.</p>';
+    h+='</div>';
+
+    var news=d.news||{},slugs=Object.keys(news);
+    h+='<div class="card reveal" style="margin-top:12px"><h3>Headlines on what you hold</h3>';
+    if(!slugs.length){
+      h+='<p class="sub" style="line-height:1.6">Nothing held, so nothing is being followed. '+
+        'Coverage is only ever fetched for companies you actually own — pulling headlines for all '+
+        '150 would produce a wall of text that reads like a reason to act, which is the opposite '+
+        'of what this is for.</p>';
+    }else{
+      slugs.forEach(function(s){
+        var items=news[s]||[];
+        h+='<div style="margin-bottom:12px"><b style="font-size:12px">'+
+          esc((POS[s]&&POS[s].name)||s)+'</b>'+
+          (items.length?'<ul class="gaps" style="margin-top:5px">'+items.map(function(a){
+            return '<li><a href="'+esc(a.url)+'" target="_blank" rel="noopener">'+esc(a.title)+
+              '</a> <span class="sub">'+esc(a.source)+'</span></li>';}).join('')+'</ul>'
+                       :'<div class="sub">No recent coverage.</div>')+'</div>';
+      });
+      h+='<p class="sub" style="line-height:1.6;margin-top:4px">Read these to understand something '+
+        'that already happened, never to decide something. Your sell triggers are the mechanism '+
+        'for deciding, and they run off filings, not headlines.</p>';
+    }
+    h+='</div>';
+    return h+'</section>';
+  }
+
+  /* ── MONTHLY REVIEW ─────────────────────────────────
+     Monthly on the businesses, not on the money. The dossier is emphatic that
+     watching a portfolio's value often makes you worse at holding it - rule 2
+     and Benartzi and Thaler on myopic loss aversion - and just as emphatic
+     that the learning sleeve exists to be read and followed. Those only
+     conflict if "review" means "check the price". So this reads the filings:
+     what the company reported, what moved since you bought, how far each
+     trigger now sits from its line. Value stays on the portfolio screen, on
+     the charter's own schedule. */
+  var RKEY='ciel-sleeve-reviews';
+  function reviewLog(){try{return JSON.parse(localStorage.getItem(RKEY)||'{}');}catch(e){return {};}}
+  function monthKey(d){d=d||new Date();return d.getUTCFullYear()+'-'+
+    String(d.getUTCMonth()+1).padStart(2,'0');}
+  function markReviewed(period){
+    var log=reviewLog();log[period]={at:new Date().toISOString()};
+    try{localStorage.setItem(RKEY,JSON.stringify(log));}catch(e){}
+    var path='charter/reviews/'+period+'.json';
+    var payload={period:period,reviewed_at:log[period].at,
+      holdings:Object.keys(POS).filter(function(s){return POS[s].invested_chf;})};
+    var msg='sleeve: monthly review '+period;
+    if(ghConfig())ghPut(path,payload,msg).catch(function(){
+      queuePending({path:path,payload:payload,message:msg});});
+    else queuePending({path:path,payload:payload,message:msg});
+  }
+
+  /* Distance to the line as a share of the threshold, so unrelated metrics can
+     be ranked against one another. */
+  function triggerDistance(t,v){
+    if(v==null||!t.threshold)return null;
+    return (t.comparison==='below')?(v-t.threshold)/Math.abs(t.threshold)
+                                   :(t.threshold-v)/Math.abs(t.threshold);
+  }
+
+  function renderMonthly(){
+    var slugs=Object.keys(POS).filter(function(s){return POS[s].invested_chf;});
+    var period=monthKey(),done=reviewLog()[period];
+    var h='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('clock')+'</span>'+
+      '<div><h2>This month</h2><p>What the companies did — not what the price did</p></div>'+
+      '<div class="line"></div></div>';
+
+    if(!slugs.length){
+      h+='<div class="card reveal"><p class="sub" style="line-height:1.65">Nothing held, so there '+
+        'is nothing to review. The monthly habit is worth building before there is money in it.</p>'+
+        '</div></section>';
+      return h;
+    }
+
+    h+='<div class="card reveal"><div class="sub" style="line-height:1.6">'+
+      '<b style="color:var(--ink)">'+esc(period)+'</b> · '+slugs.length+' holding'+
+      (slugs.length>1?'s':'')+' · '+
+      (done?'reviewed '+esc(done.at.slice(0,10)):'not yet reviewed')+
+      '<br>Reading the filings monthly is the habit the charter asks for. Checking what the '+
+      'holding is <i>worth</i> monthly is the habit it warns against — that stays on the '+
+      'portfolio screen, on its own schedule.</div></div>';
+
+    slugs.forEach(function(s){
+      var p=POS[s],state=checkTriggers(p),live=state.live;
+      h+='<div class="card reveal" style="margin-top:10px'+
+        (state.fired.length?';border-left:3px solid var(--crit)':'')+'">'+
+        '<h3><a href="#/c/'+esc(s)+'">'+esc(p.name||s)+'</a></h3>';
+
+      if(state.stale){
+        h+='<p class="sub" style="color:var(--warn);line-height:1.6;margin-top:6px">Not in the '+
+          'latest scan. Going-concern doubt, a restatement or a collapse in reporting quality all '+
+          'remove a company from the universe, so this is worth opening the filings for '+
+          'yourself.</p></div>';
+        return;
+      }
+
+      h+='<div class="totals" style="padding:8px 0 2px">'+
+        '<div><b>'+(live.revenue_growth==null?'—':pct(live.revenue_growth,1))+
+          '</b><span class="sub">revenue, year on year</span></div>'+
+        '<div><b>'+(live.gross_margin==null?'—':pct(live.gross_margin,1))+
+          '</b><span class="sub">gross margin</span></div>'+
+        '<div><b>'+(live.dilution==null?'—':pct(live.dilution,1))+
+          '</b><span class="sub">more shares</span></div>'+
+        '<div><b>'+(live.cash_flow_positive?'self-funding':
+          (live.runway_months==null?'—':num(live.runway_months)+' mo'))+
+          '</b><span class="sub">cash position</span></div>'+
+      '</div>';
+
+      var m0=p.metrics_at_accept||{},moves=[];
+      [['revenue_growth_yoy','Revenue growth',live.revenue_growth],
+       ['gross_margin','Gross margin',live.gross_margin],
+       ['dilution_yoy','Dilution',live.dilution]].forEach(function(row){
+        var then=m0[row[0]],now=row[2];
+        if(then==null||now==null)return;
+        var delta=now-then;
+        if(Math.abs(delta)<0.005)return;
+        moves.push('<li>'+esc(row[1])+' '+(delta>0?'up':'down')+' '+pct(Math.abs(delta),1)+
+          ' since you bought — '+pct(then,1)+' then, '+pct(now,1)+' now</li>');
+      });
+      h+=moves.length
+        ? '<ul class="gaps" style="margin-top:8px">'+moves.join('')+'</ul>'
+        : '<p class="sub" style="margin-top:8px">Nothing has moved materially since you bought.</p>';
+
+      h+='<div style="margin-top:10px">'+(p.triggers||[]).map(function(t){
+        var hit=state.fired.filter(function(f){return f.t===t;})[0];
+        var nearHit=state.near.filter(function(n){return n.t===t;})[0];
+        var blind=(state.unchecked||[]).filter(function(u){return u.t===t;})[0];
+        if(hit)return '<div class="trig fired" style="margin-bottom:6px">'+
+          '<div class="trig-lab">'+esc(t.label)+' <span class="flag">FIRED</span></div>'+
+          '<div class="trig-now" style="margin-top:4px">now '+esc(fmtMetric(t.metric,hit.v))+
+          ' · you set '+esc(t.threshold_display||'')+'</div></div>';
+        if(blind)return '<div class="trig" style="margin-bottom:6px;opacity:.62">'+
+          '<div class="trig-lab">'+esc(t.label)+'</div>'+
+          '<div class="trig-now" style="margin-top:4px">not checkable from the scan</div></div>';
+        var d=nearHit?triggerDistance(t,nearHit.v):null;
+        return '<div class="trig" style="margin-bottom:6px'+
+          (d!=null?';border-color:var(--warn)':'')+'">'+
+          '<div class="trig-lab">'+esc(t.label)+'</div>'+
+          '<div class="trig-now" style="margin-top:4px">'+
+          (d==null?'clear of the line':pct(Math.abs(d),0)+' from the line')+'</div></div>';
+      }).join('')+'</div></div>';
+    });
+
+    h+='<div class="card reveal" style="margin-top:12px">'+
+      '<p class="sub" style="line-height:1.6;margin-bottom:10px">Marking the month read records '+
+      'the date and the holdings, nothing more. It is evidence that you looked, so the annual '+
+      'review can report how often you actually did.</p>'+
+      '<button class="btn-primary" id="monthDone"'+(done?' disabled':'')+'>'+
+      (done?'Marked read':'Mark '+esc(period)+' as read')+'</button></div>';
+    return h+'</section>';
+  }
+
+  /* ── PORTFOLIO ──────────────────────────────────────
+     What you put in, what you own, and — only where a price exists — what it
+     is worth. The three are kept visually distinct on purpose: cost basis is a
+     fact you entered, value is a measurement that depends on a feed, and the
+     gap between them is the only thing that counts as performance. */
+  /* ── RETURN ─────────────────────────────────────────
+     Money-weighted return, by the same XIRR that Sharesight and Ghostfolio put
+     at the centre of their reporting - and for the reason the charter makes
+     unavoidable. Rule 1 contributes every quarter, and a simple gain
+     percentage is wrong the moment money arrives at more than one date: buy
+     CHF 1,000, watch it halve, add CHF 9,000 and recover 10%, and naive
+     arithmetic reports a gain while the money-weighted answer knows what
+     actually happened to the francs. Appendix A asks whether the sleeve beat
+     the core over three consecutive years. That question cannot be answered
+     honestly any other way.
+
+     Newton first because it converges in a handful of iterations on
+     well-behaved flows, bisection after it because Newton diverges on the
+     ragged ones, and null rather than a number when neither lands - an
+     unconverged rate presented as a return would be a lie with decimal
+     places. */
+  function xirr(flows){
+    if(!flows||flows.length<2)return null;
+    var t0=flows[0].date;
+    var neg=flows.some(function(f){return f.amount<0;});
+    var pos=flows.some(function(f){return f.amount>0;});
+    if(!neg||!pos)return null;   // a rate needs money both out and back
+    function npv(rate){
+      var total=0;
+      for(var i=0;i<flows.length;i++){
+        var years=(flows[i].date-t0)/(365.25*86400000);
+        total+=flows[i].amount/Math.pow(1+rate,years);
+      }
+      return total;
+    }
+    var rate=0.1;
+    for(var i=0;i<60;i++){
+      var f=npv(rate),step=0.0001;
+      var slope=(npv(rate+step)-f)/step;
+      if(!isFinite(slope)||Math.abs(slope)<1e-12)break;
+      var next=rate-f/slope;
+      if(!isFinite(next)||next<=-0.9999)break;
+      if(Math.abs(next-rate)<1e-7)return Math.abs(npv(next))<1e-4?next:null;
+      rate=next;
+    }
+    var lo=-0.95,hi=10;
+    if(npv(lo)*npv(hi)>0)return null;
+    for(var j=0;j<200;j++){
+      var mid=(lo+hi)/2;
+      if(npv(lo)*npv(mid)<=0)hi=mid;else lo=mid;
+    }
+    return (hi+lo)/2;
+  }
+
+  /* Splits the return into the part the business earned and the part the franc
+     did. Every holding here is a US listing and the reference currency is CHF,
+     so a double-digit move in the dollar swamps a year of trading. Reporting a
+     single blended figure would credit the company for a currency move, or
+     blame it for one. fx_at_buy is stored on every purchase precisely so this
+     can be separated afterwards. */
+  function returnSplit(pos){
+    var px=priceFor(pos.slug);
+    if(!px||!pos.shares||!pos.price_paid||!pos.fx_at_buy)return null;
+    var fxNow=fxToChf(px.currency||pos.currency||'USD');
+    if(fxNow==null)return null;
+    var localThen=pos.shares*pos.price_paid;
+    var localNow=pos.shares*px.close;
+    return {
+      // What the shares did, held at the rate on the day you bought.
+      business:(localNow-localThen)*pos.fx_at_buy,
+      // What the same shares did purely because the franc moved.
+      currency:localNow*(fxNow-pos.fx_at_buy),
+      valueChf:localNow*fxNow
+    };
+  }
+
+  function portfolioTotals(){
+    var invested=0,value=0,priced=0,held=0,unpriced=[];
+    Object.keys(POS).forEach(function(s){
+      var p=POS[s];
+      if(!p.invested_chf)return;
+      held++; invested+=p.invested_chf;
+      var v=valueChf(p);
+      if(v==null){unpriced.push(p.name||s);}
+      else{value+=v;priced++;}
+    });
+    return {invested:invested,value:value,priced:priced,held:held,unpriced:unpriced,
+            complete:held>0&&priced===held};
+  }
+
+  function renderPortfolio(){
+    var slugs=Object.keys(POS).filter(function(s){return POS[s].invested_chf;});
+    var T=portfolioTotals();
+    var h='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('scale')+'</span>'+
+      '<div><h2>Portfolio</h2><p>Bought on paper. Measured for real.</p></div>'+
+      '<div class="line"></div></div>';
+
+    if(!slugs.length){
+      h+='<div class="card reveal"><p class="sub" style="line-height:1.65">Nothing held yet. '+
+        'Open a company from the research queue, read the case, set an amount and a price, and it '+
+        'appears here. Up to four, per rule 5.</p>'+
+        '<a class="btn-primary" href="#/" style="display:block;text-align:center;margin-top:12px">'+
+        'Browse the queue</a></div></section>';
+      return h;
+    }
+
+    var pnl=T.complete?T.value-T.invested:null;
+    h+='<div class="card reveal"><div class="totals">'+
+        '<div><b>'+chf(T.invested,0)+'</b><span class="sub">put in, after costs</span></div>'+
+        '<div><b>'+(T.complete?chf(T.value,0):'—')+'</b><span class="sub">worth now</span></div>'+
+        '<div><b class="'+(pnl==null?'':(pnl>=0?'up':'down'))+'">'+
+          (pnl==null?'—':(pnl>=0?'+':'')+chf(pnl,0))+'</b><span class="sub">'+
+          (pnl==null?'needs a price feed':(pnl>=0?'ahead':'behind'))+'</span></div>'+
+        '<div><b>'+slugs.length+' of 4</b><span class="sub">slots used</span></div>'+
+      '</div>'+
+      (T.complete
+        ? '<p class="sub" style="line-height:1.55;margin-top:6px">Priced '+esc(PX&&PX.asof||'')+
+          '. A number this small over a horizon this long carries almost no information — the '+
+          'dossier is explicit that three years is the shortest window worth reading.</p>'
+        : '<p class="sub" style="line-height:1.55;margin-top:6px;color:var(--warn)">'+
+          (T.priced?'Only '+T.priced+' of '+T.held+' holdings have a price ('+
+             esc(T.unpriced.join(', '))+' do not), so no total is shown — a partial sum '+
+             'presented as a portfolio value would be wrong rather than incomplete.'
+                   :'No price feed connected, so there is no value and no profit or loss here. '+
+             'What you put in and what you own are still exact.')+'</p>')+
+      '</div>';
+
+    h+='<div class="card reveal" style="margin-top:12px">';
+    slugs.forEach(function(s){
+      var p=POS[s],v=valueChf(p),px=priceFor(s);
+      var gain=(v==null)?null:v-p.invested_chf;
+      var pctGain=(gain==null||!p.invested_chf)?null:gain/p.invested_chf;
+      var state=checkTriggers(p);
+      h+='<div class="hold"><div>'+
+        '<h3><a href="#/c/'+esc(s)+'">'+esc(p.name||s)+'</a>'+
+          (p.ticker?' <span class="mono sub">'+esc(p.ticker)+'</span>':'')+'</h3>'+
+        '<div class="sub">'+num(p.shares,3)+' shares at '+esc(p.currency||'')+' '+
+          num(p.price_paid,2)+' · '+chf(p.invested_chf,0)+' in · confidence '+
+          esc(p.confidence||'—')+'/5</div>'+
+        (state.fired.length
+          ? '<div class="sub" style="color:var(--crit);margin-top:4px">'+state.fired.length+
+            ' sell trigger'+(state.fired.length>1?'s':'')+' fired — see the review</div>'
+          : state.stale
+            ? '<div class="sub" style="color:var(--warn);margin-top:4px">not in the latest scan</div>'
+            : '')+
+        '</div>'+
+        '<div class="num">'+
+          '<b>'+(v==null?'—':chf(v,0))+'</b>'+
+          '<span class="sub '+(gain==null?'':(gain>=0?'up':'down'))+'">'+
+            (gain==null?(px?'no rate':'no price'):(gain>=0?'+':'')+pct(pctGain,1))+'</span>'+
+        '</div></div>';
+    });
+    h+='</div>';
+
+    /* Appendix A asks for the total cost borne, in francs and as a percentage.
+       It is answerable exactly from what was recorded at purchase, needs no
+       price feed, and is the one number in this tool that is certain. */
+    var costs=0,gross=0;
+    slugs.forEach(function(s){costs+=POS[s].costs_chf||0;gross+=POS[s].amount_chf||0;});
+    var flows=[];
+    slugs.forEach(function(s){
+      var when=Date.parse(POS[s].bought_at||POS[s].accepted_at||'');
+      if(!isNaN(when))flows.push({date:when,amount:-(POS[s].amount_chf||0)});
+    });
+    if(T.complete&&flows.length)flows.push({date:Date.now(),amount:T.value});
+    flows.sort(function(a,b){return a.date-b.date;});
+    var rate=T.complete?xirr(flows):null;
+
+    var split={business:0,currency:0,ok:T.complete};
+    slugs.forEach(function(s){
+      var r=returnSplit(POS[s]);
+      if(!r){split.ok=false;return;}
+      split.business+=r.business;split.currency+=r.currency;
+    });
+
+    h+='<div class="card reveal" style="margin-top:12px"><h3>How it is actually doing</h3>'+
+      '<div class="totals">'+
+        '<div><b>'+(rate==null?'—':(rate>=0?'+':'')+pct(rate,1))+'</b>'+
+          '<span class="sub">a year, money-weighted</span></div>'+
+        '<div><b class="'+(split.ok?(split.business>=0?'up':'down'):'')+'">'+
+          (split.ok?(split.business>=0?'+':'')+chf(split.business,0):'—')+'</b>'+
+          '<span class="sub">from the businesses</span></div>'+
+        '<div><b class="'+(split.ok?(split.currency>=0?'up':'down'):'')+'">'+
+          (split.ok?(split.currency>=0?'+':'')+chf(split.currency,0):'—')+'</b>'+
+          '<span class="sub">from the franc</span></div>'+
+        '<div><b>'+pct(gross?costs/gross:0,2)+'</b>'+
+          '<span class="sub">lost to costs, '+chf(costs,2)+'</span></div>'+
+      '</div>'+
+      '<p class="sub" style="line-height:1.6;margin-top:8px">'+
+      (rate==null
+        ? 'The annual rate is money-weighted — the same XIRR a professional report uses — because '+
+          'you contribute quarterly and a plain gain percentage stops being true the moment money '+
+          'arrives at more than one date. It needs a price to compute.'
+        : 'Money-weighted, so contribution timing is counted rather than averaged away. Over a '+
+          'window this short the figure is noise; the dossier says three consecutive years is the '+
+          'shortest span worth reading.')+
+      '</p>'+
+      '<p class="sub" style="line-height:1.6;margin-top:6px">'+
+      (split.ok
+        ? 'The split matters more than the total: every holding here is a US listing and you count '+
+          'in francs, so a move in the dollar can swamp a year of trading. A single blended number '+
+          'would credit a company for a currency move, or blame it for one.'
+        : 'Once prices are connected this separates what the businesses earned from what the franc '+
+          'did — the rate on the day you bought is stored on every purchase so the two can be '+
+          'told apart.')+
+      '</p></div>';
+
+    /* Appendix A: "was the withholding tax correctly declared and credited?"
+       Every company in this universe is a US listing, so this is not a
+       hypothetical - it is 15 percentage points of every dividend. */
+    h+='<div class="card reveal" style="margin-top:12px"><h3>Withholding tax on US dividends</h3>'+
+      '<p class="sub" style="line-height:1.65">The United States withholds <b>30%</b> of dividends '+
+      'paid to a foreign holder by default. The Switzerland–US treaty cuts that to <b>15%</b> for '+
+      'a private investor, but only if a <b>W-8BEN</b> is on file with the broker <i>before</i> '+
+      'the dividend is paid — it is not applied retroactively, and recovering the difference '+
+      'afterwards means filing a 1040-NR with the IRS. The remaining 15% is then reclaimed against '+
+      'Swiss tax through form <b>DA-1</b> with the annual return.</p>'+
+      '<p class="sub" style="line-height:1.65;margin-top:8px">Two things follow. Sign the W-8BEN '+
+      'when the account is opened, and renew it — it lapses after three calendar years. And note '+
+      'that a dividend yield quoted anywhere is a pre-tax number: at 15% withholding a 2% yield is '+
+      '1.7% in hand before Swiss income tax touches it.</p>'+
+      '<p class="sub" style="line-height:1.6;margin-top:8px;color:var(--warn)">This is how the tax '+
+      'works, not advice about your situation, and the account will be opened by an adult who '+
+      'should confirm it. Section 4.4 also flags that a parent\'s employer may require '+
+      'pre-clearance for these trades.</p></div>';
+
+    h+='<div class="card reveal" style="margin-top:12px"><h3>What this is not</h3>'+
+      '<p class="sub" style="line-height:1.65">These are paper positions. Nothing has been ordered, '+
+      'nothing is held at a broker, and no tax has been paid. The costs are modelled from section '+
+      '4.3 — Swiss or foreign stamp duty, brokerage, FX spread — and deducted before the share '+
+      'count, so the arithmetic matches a real purchase even though the purchase is not real. '+
+      'When you do open a broker account, the numbers here are what you compare against.</p></div>';
+    return h+'</section>';
   }
 
   /* ── COVERAGE ───────────────────────────────────────── */
@@ -1239,6 +1855,29 @@
         '<button class="btn-primary" id="ghSave" style="margin-top:11px">Save</button>'+
         (pendingCount()?'<div class="blocked" style="color:var(--warn)">'+pendingCount()+
           ' change(s) waiting to sync.</div>':'')+
+      '</div>'+
+
+      '<div class="card reveal" style="margin-top:12px">'+
+        '<h3>Your broker\'s costs</h3>'+
+        '<p class="sub" style="line-height:1.6;margin-bottom:11px">These decide whether any '+
+        'purchase can pass section 4.4\'s rule that total costs stay below '+
+        pct(brokerCosts().max_total_cost_pct,1)+' of the amount invested — and they vary by more '+
+        'than a factor of ten between Swiss brokers. The currency spread is the one that matters: '+
+        'at '+pct(0.005,1)+' it alone exceeds the ceiling, so no order of any size would ever '+
+        'clear, while a broker charging '+pct(0.0003,2)+' leaves plenty of room. Look up what '+
+        'yours actually charges rather than trusting the default.</p>'+
+        '<div class="tik">'+
+          '<label>Commission <span class="sub">CHF per order</span>'+
+            '<input id="bkFlat" type="number" min="0" step="0.5" value="'+
+              num(brokerCosts().brokerage_flat_chf,2)+'"></label>'+
+          '<label>Currency spread <span class="sub">%</span>'+
+            '<input id="bkFx" type="number" min="0" step="0.01" value="'+
+              num(brokerCosts().fx_spread_pct*100,3)+'"></label>'+
+        '</div>'+
+        '<div id="bkOut" class="sub" style="margin-top:10px;line-height:1.55"></div>'+
+        '<button class="btn-primary" id="bkSave" style="margin-top:11px">Save</button>'+
+        '<p class="sub" style="margin-top:10px;line-height:1.55">Stamp duty is federal and not '+
+        'editable: 0.075% on Swiss securities, 0.15% on foreign ones.</p>'+
       '</div>'+
 
       '<div class="card reveal" style="margin-top:12px">'+
@@ -1368,32 +2007,40 @@
     'dossier — percentages to one decimal, money in the units given. Do not use headings for a '+
     'two-paragraph answer.';
 
+  /* Ordered stable-first, and that order is the whole point.
+     A prompt cache matches on a prefix, so anything that changes between
+     requests invalidates everything after it. The queue digest, the coverage
+     notes and the charter are identical no matter which company is open and
+     make up most of the payload; the dossier changes every time you tap a
+     different row. Putting the dossier first - which is what this did at
+     first - meant opening a second company threw away the entire cached
+     context and re-billed the lot. Stable blocks lead, the cache breakpoint
+     sits at the end of them, and the volatile dossier trails behind
+     uncached. */
   function askContext(){
     var blocks=[{type:'text',text:ASK_RULES}];
-    var parts=[];
-    if(ASK.company){
-      parts.push('THE COMPANY CURRENTLY OPEN ON SCREEN — the full dossier as committed:\n'+
-        JSON.stringify(ASK.company));
-    }
+    var stable=[];
     var digest=queueDigest();
     if(digest.length){
-      parts.push('THE FULL RESEARCH QUEUE — '+digest.length+' companies that survived screening, '+
+      stable.push('THE FULL RESEARCH QUEUE — '+digest.length+' companies that survived screening, '+
         'summary fields only. Use this for comparisons and for questions across the whole list:\n'+
         JSON.stringify(digest));
     }
     if(M){
-      parts.push('SCAN METADATA — cohort, source status and the stated coverage gaps:\n'+
+      stable.push('SCAN METADATA — cohort, source status and the stated coverage gaps:\n'+
         JSON.stringify({generated_at:M.generated_at,cohort:M.cohort,counts:M.counts,
           disqualifications:M.disqualifications,coverage_gaps:M.coverage_gaps}));
     }
     if(CHARTER){
-      parts.push('ARTHUR\'S CHARTER — the rules this tool enforces:\n'+JSON.stringify(CHARTER));
+      stable.push('ARTHUR\'S CHARTER — the rules this tool enforces:\n'+JSON.stringify(CHARTER));
     }
-    if(parts.length){
-      // Cached on the trailing block: the dossier and queue are identical across
-      // every follow-up in a thread, so only the new question is billed at full
-      // rate after the first exchange.
-      blocks.push({type:'text',text:parts.join('\n\n'),cache_control:{type:'ephemeral'}});
+    if(stable.length){
+      blocks.push({type:'text',text:stable.join('\n\n'),cache_control:{type:'ephemeral'}});
+    }
+    if(ASK.company){
+      blocks.push({type:'text',
+        text:'THE COMPANY CURRENTLY OPEN ON SCREEN — the full dossier as committed:\n'+
+             JSON.stringify(ASK.company)});
     }
     return blocks;
   }
@@ -1607,12 +2254,19 @@
     }).then(function(){
       // A refusal carries no content, so reading the empty block as an answer
       // would render a blank bubble and look like a bug.
+      //
+      // Both of these leave the question unanswered, so it comes back out of
+      // the log. A turn with no reply after it means the next request sends two
+      // user messages in a row, which the API rejects - one refusal would
+      // poison every later question in the thread rather than just its own.
       if(refused){
         out.className='msg err';
         out.innerHTML='Claude declined to answer that one. Rephrase it and try again.';
+        ASK.log.pop();
       }else if(!text){
         out.className='msg err';
         out.innerHTML='Empty response. Ask again.';
+        ASK.log.pop();
       }else{
         out.innerHTML=md(text);
         ASK.log.push({role:'assistant',content:text});
@@ -1684,6 +2338,30 @@
         askReset();
         this.textContent='Saved';
       });
+      // Shows the consequence as you type, because the whole point is that the
+      // number decides whether anything is buyable at all.
+      var bkPreview=function(){
+        var flat=parseFloat($('#bkFlat').value),spread=parseFloat($('#bkFx').value)/100;
+        if(isNaN(flat)||isNaN(spread)){$('#bkOut').textContent='';return;}
+        var limit=brokerCosts().max_total_cost_pct;
+        var rate=brokerCosts().stamp_duty_foreign+spread;
+        var head=limit-rate;
+        $('#bkOut').innerHTML=head>0
+          ? 'On a foreign security this clears the bar from about <b>'+
+            chf(Math.ceil(flat/head/50)*50,0)+'</b> upward.'
+          : '<b style="color:var(--crit)">At this spread nothing clears the bar.</b> Stamp duty '+
+            'and currency together are '+pct(rate,2)+' of any order, against a '+pct(limit,1)+
+            ' ceiling.';
+      };
+      ['#bkFlat','#bkFx'].forEach(function(s){$(s).addEventListener('input',bkPreview);});
+      bkPreview();
+      $('#bkSave').addEventListener('click',function(){
+        var flat=parseFloat($('#bkFlat').value),spread=parseFloat($('#bkFx').value)/100;
+        if(isNaN(flat)||isNaN(spread))return;
+        try{localStorage.setItem(BKEY,JSON.stringify(
+          {brokerage_flat_chf:flat,fx_spread_pct:spread}));}catch(e){}
+        this.textContent='Saved';
+      });
       hydrate();window.scrollTo(0,0);return;
     }
     if(hash.indexOf('#/c/')===0){
@@ -1699,6 +2377,25 @@
       return;
     }
     askSetCompany(null);
+    if(hash!=='#/live')stopLive();
+    if(hash==='#/live'){
+      view.innerHTML=renderLive();hydrate();window.scrollTo(0,0);
+      if(!LIVE)loadLive().then(function(d){
+        LIVE=d;
+        if(location.hash==='#/live'){view.innerHTML=renderLive();hydrate();}
+      });
+      startLive();
+      return;
+    }
+    if(hash==='#/portfolio'){view.innerHTML=renderPortfolio();hydrate();window.scrollTo(0,0);return;}
+    if(hash==='#/month'){
+      view.innerHTML=renderMonthly();
+      var done=$('#monthDone');
+      if(done)done.addEventListener('click',function(){
+        markReviewed(monthKey());route();
+      });
+      hydrate();window.scrollTo(0,0);return;
+    }
     if(hash==='#/review'){view.innerHTML=renderReview();hydrate();window.scrollTo(0,0);return;}
     view.innerHTML=charterBand()+renderQueue()+baseRateSection()+renderCoverage();
     var sb=$('#stripBtn');
@@ -1717,8 +2414,84 @@
     hydrate();
   }
 
+  /* Recomputes the ticket on every keystroke and returns what a buy would be,
+     so the button and the arithmetic can never disagree. */
+  function ticketState(d){
+    var box=$('#ticket');
+    if(!box)return null;
+    var foreign=box.getAttribute('data-foreign')==='1';
+    var cur=box.getAttribute('data-cur')||'USD';
+    var amount=parseFloat($('#buyAmount').value);
+    var price=parseFloat($('#buyPrice').value);
+    var minOrder=(COSTS&&COSTS.min_order_chf)||500;
+    var cost=orderCost(amount>0?amount:1,foreign);
+    var fx=fxToChf(cur);
+    // Shares are amount-net-of-costs divided by price, converted into the
+    // listing currency. Ignoring the costs would credit you with shares the
+    // money did not buy, and the gap compounds through every later review.
+    var invested=amount>0?amount-cost.total:0;
+    var shares=(invested>0&&price>0&&fx)?(invested/fx)/price:null;
+    var reasons=[];
+    // Rule 5, second clause: "if I lose money there, I do not top it up." Only
+    // checkable against a live price, and only meaningful when the amount goes
+    // up - reducing or restating a holding is not a top-up.
+    var existing=POS[d.slug];
+    if(existing&&existing.amount_chf&&amount>existing.amount_chf){
+      var nowValue=valueChf(existing);
+      if(nowValue!=null&&nowValue<existing.invested_chf){
+        reasons.push('Rule 5: this holding is down ('+chf(nowValue,0)+' against '+
+          chf(existing.invested_chf,0)+' put in) and the charter refuses a top-up on a loser. '+
+          'Adjust downward or leave it.');
+      }
+    }
+    if(!(amount>0))reasons.push('Enter an amount.');
+    else if(amount<minOrder)reasons.push('Below the CHF '+minOrder+' minimum order in section 4.4.');
+    else if(cost.pct>cost.limit){
+      reasons.push(cost.reachable
+        ? 'Costs are '+pct(cost.pct,2)+' of the order, over the '+pct(cost.limit,1)+
+          ' bar. About '+chf(cost.minClearing,0)+' would clear it.'
+        : 'Stamp duty and currency spread alone come to '+pct(cost.proportional,2)+
+          ' of any order — above the '+pct(cost.limit,1)+' ceiling before commission, so no '+
+          'order of any size clears it. That is an assumption about your broker, not a fact: '+
+          'set the real currency spread in Settings.');
+    }
+    if(!(price>0))reasons.push('Enter the price you would pay.');
+    if(price>0&&!fx)reasons.push('No '+cur+'/CHF rate available, so the share count cannot be worked out.');
+    return {amount:amount,price:price,cost:cost,fx:fx,cur:cur,shares:shares,
+            invested:invested,foreign:foreign,ok:reasons.length===0,reasons:reasons};
+  }
+
+  function renderTicket(d){
+    var t=ticketState(d),out=$('#ticketOut');
+    if(!t||!out)return null;
+    var good=t.cost.pct<=t.cost.limit;
+    out.innerHTML=
+      '<div style="display:flex;gap:18px;flex-wrap:wrap">'+
+        '<div><b class="tnum" style="font-size:16px">'+
+          (t.shares?num(t.shares,3):'—')+'</b><div class="sub">shares</div></div>'+
+        '<div><b class="tnum" style="font-size:16px">CHF '+
+          (t.amount>0?num(t.cost.total,2):'—')+'</b><div class="sub">costs</div></div>'+
+        '<div><b class="tnum" style="font-size:16px;color:'+(good?'var(--good)':'var(--crit)')+'">'+
+          (t.amount>0?pct(t.cost.pct,2):'—')+'</b><div class="sub">of the order, limit '+
+          pct(t.cost.limit,1)+'</div></div>'+
+      '</div>'+
+      '<p class="sub" style="margin-top:9px;line-height:1.55">'+
+        (t.foreign?'Foreign security: 0.15% stamp duty plus an FX leg.'
+                 :'Swiss security: 0.075% stamp duty, no FX leg.')+
+        (t.fx&&t.cur!=='CHF'?' At '+num(1/t.fx,4)+' '+esc(t.cur)+' per franc.':'')+
+      '</p>'+
+      (t.reasons.length?'<div class="blocked" style="margin-top:8px">'+
+        t.reasons.map(esc).join(' ')+'</div>':'');
+    return t;
+  }
+
   function bindDossier(d){
     var conf=$('#conf'),chosen=(POS[d.slug]&&POS[d.slug].confidence)||null;
+    ['#buyAmount','#buyPrice'].forEach(function(sel){
+      var el=$(sel);
+      if(el)el.addEventListener('input',function(){renderTicket(d);});
+    });
+    renderTicket(d);
     if(conf)conf.addEventListener('click',function(e){
       var b=e.target.closest('button[data-c]');if(!b)return;
       chosen=parseInt(b.getAttribute('data-c'),10);
@@ -1729,10 +2502,30 @@
     var btn=$('#acceptBtn');
     if(btn)btn.addEventListener('click',function(){
       if(!chosen){var w=$('#confWarn');if(w)w.hidden=false;return;}
+      // The cost gate is a charter rule, not a hint, so it blocks here as well
+      // as reading red on the ticket.
+      var t=renderTicket(d);
+      if(!t||!t.ok){
+        var box=$('#ticket');
+        if(box)box.scrollIntoView({behavior:'smooth',block:'center'});
+        return;
+      }
       var record={
         slug:d.slug,name:d.name,ticker:d.ticker,cik:d.cik,
         confidence:chosen,
         accepted_at:new Date().toISOString(),
+        // The holding itself. bought_at is kept separate from accepted_at so a
+        // later top-up or adjustment cannot quietly rewrite when the thesis
+        // was first formed - the calibration replay depends on that date.
+        bought_at:(POS[d.slug]&&POS[d.slug].bought_at)||new Date().toISOString(),
+        amount_chf:round2(t.amount),
+        costs_chf:round2(t.cost.total),
+        invested_chf:round2(t.invested),
+        price_paid:t.price,
+        currency:t.cur,
+        fx_at_buy:t.fx,
+        shares:t.shares,
+        paper:true,
         accepted_score:(d.score&&d.score.total)||null,
         accepted_cohort:(L&&L.cohort)||'',
         rubric_version:(d.score&&d.score.rubric_version)||'',
@@ -1775,9 +2568,12 @@
     fetch(DATA+'manifest.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
     fetch(DATA+'latest.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
     fetch('charter/charter.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
-    fetch('scanner/config/costs.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
+    fetch('scanner/config/costs.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+    // Optional by design: absent until a feed is configured, and every screen
+    // that touches it is written to degrade rather than break.
+    fetch(DATA+'prices.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
   ]).then(function(res){
-    M=res[0];L=res[1];CHARTER=res[2];COSTS=res[3];
+    M=res[0];L=res[1];CHARTER=res[2];COSTS=res[3];PX=res[4];
     flushPending();
     if(!L){
       $('#view').innerHTML='<div class="empty"><b>No scan data yet.</b>'+

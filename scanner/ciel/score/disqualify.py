@@ -132,4 +132,38 @@ def penalty_applies(penalty_id, company, m):
         if value is not None and value > 0.5:
             return "Largest customers account for %s of revenue." % pct(value)
 
+    # Legal exposure was extracted and displayed but never scored, so a company
+    # disclosing active litigation ranked identically to one stating it has
+    # none. Item 3 of the annual report is where a company must describe
+    # material proceedings; narrative.legal_material already separates a real
+    # disclosure from the "we are not party to any material proceedings"
+    # boilerplate, so this scores the distinction rather than the mere presence
+    # of the section.
+    if penalty_id == "active_litigation":
+        narrative = getattr(company, "narrative", None) or {}
+        if narrative.get("legal_material"):
+            return ("Item 3 of the annual report describes material legal proceedings rather "
+                    "than stating there are none. Read it — the dossier quotes it in full.")
+
+    if penalty_id == "legal_event":
+        events = [e for e in (getattr(company, "legal", None) or [])]
+        if events:
+            labels = ", ".join(sorted({e.get("label", "") for e in events if e.get("label")}))
+            return ("Reported %d legal or audit event%s in the last two years%s."
+                    % (len(events), "" if len(events) == 1 else "s",
+                       (": " + labels) if labels else ""))
+
+    # Coverage counts only when it is hostile. Volume of news measures
+    # attention, and attention is not a virtue: Barber and Odean (2008) found
+    # individual investors buy attention-grabbing stocks and do worse for it.
+    # So a company in the headlines for nothing in particular scores neither up
+    # nor down, and only sustained negative tone registers here.
+    if penalty_id == "hostile_coverage":
+        tone = m.get("news_tone")
+        volume = m.get("news_volume") or 0
+        if tone is not None and volume >= 5 and tone <= -2.5:
+            return ("Recent press coverage is materially negative (tone %.1f across %d articles). "
+                    "Tone is a crude machine reading, not a judgement — go and read them."
+                    % (tone, volume))
+
     return None

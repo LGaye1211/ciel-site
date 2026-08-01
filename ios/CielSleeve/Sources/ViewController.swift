@@ -9,17 +9,22 @@ import WebKit
 /// that stops a quarterly review from happening.
 final class ViewController: UIViewController {
 
-    /// Every GitHub Pages URL the site has lived at, newest first.
+    /// Every GitHub Pages URL the site may live at, current home first.
     ///
     /// A single hardcoded host would make a repository transfer fatal: Pages
     /// stops serving the old owner's URL the moment the repo moves, the app
     /// shows its offline page forever, and fixing it costs a rebuild and a
-    /// second sideload. Sideloading is the expensive part, so the app walks
-    /// this list instead and remembers whichever host answered. Adding a row
-    /// here is enough to survive the next move.
+    /// second sideload. Sideloading is the expensive part, so the app asks each
+    /// of these in turn and remembers whichever answered. Adding a row here is
+    /// enough to survive the next move.
+    ///
+    /// Order matters only for launch latency - the resolver tries them in
+    /// sequence - so the address serving the site today goes first and the
+    /// planned one waits behind it. Once the transfer happens the second entry
+    /// starts answering, the app switches to it on the next launch and pins it.
     private static let candidates: [URL] = [
-        URL(string: "https://arthurgayecom.github.io/ciel-site/sleeve.html")!,
         URL(string: "https://lgaye1211.github.io/ciel-site/sleeve.html")!,
+        URL(string: "https://arthurgayecom.github.io/ciel-site/sleeve.html")!,
     ]
     private static let savedKey = "ciel.siteURL"
 
@@ -34,8 +39,8 @@ final class ViewController: UIViewController {
         }
         return list
     }()
-    private var index = 0
-    private var siteURL: URL { order[min(index, order.count - 1)] }
+    /// Whichever candidate answered. Nothing loads until one has.
+    private var siteURL: URL?
 
     private var webView: WKWebView!
     private let refresher = UIRefreshControl()
@@ -93,26 +98,60 @@ final class ViewController: UIViewController {
             : UIColor(red: 0.027, green: 0.051, blue: 0.094, alpha: 1)   // --page dark
     }
 
+    /// Ask each candidate in turn who is home, then load the one that answered.
+    ///
+    /// The first version of this drove the walk through WKWebView itself:
+    /// cancel the navigation on a 4xx and advance. That looked tidy and was
+    /// quietly broken. Cancelling a response makes WebKit report the abandoned
+    /// navigation as a *failure* - and not as NSURLErrorCancelled, which is what
+    /// the guard checked for, but as WebKitErrorDomain 102, "frame load
+    /// interrupted". So every recovery advanced twice: once deliberately, once
+    /// from the phantom failure. With two candidates that ran off the end of the
+    /// list and painted the offline page over a load that was already
+    /// succeeding. The app shipped showing "No connection" against a site
+    /// returning 200.
+    ///
+    /// Resolving with URLSession before handing anything to the web view has no
+    /// such race. One request decides, then exactly one navigation happens, and
+    /// the navigation delegate goes back to meaning what it says: a failure is a
+    /// failure.
     private func load() {
-        webView.load(URLRequest(url: siteURL, cachePolicy: .reloadRevalidatingCacheData))
+        resolve(from: 0)
+    }
+
+    private func resolve(from position: Int) {
+        guard position < order.count else {
+            refresher.endRefreshing()
+            showOffline()
+            return
+        }
+        let candidate = order[position]
+        var probe = URLRequest(url: candidate, cachePolicy: .reloadIgnoringLocalCacheData,
+                               timeoutInterval: 12)
+        // GET rather than HEAD: a static host that mishandles HEAD would take
+        // the site down for no reason, and the page is a few tens of kilobytes.
+        probe.httpMethod = "GET"
+
+        URLSession.shared.dataTask(with: probe) { [weak self] _, response, _ in
+            let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                guard (200..<400).contains(code) else {
+                    self.resolve(from: position + 1)
+                    return
+                }
+                self.siteURL = candidate
+                UserDefaults.standard.set(candidate, forKey: Self.savedKey)
+                self.webView.load(URLRequest(url: candidate,
+                                             cachePolicy: .reloadRevalidatingCacheData))
+            }
+        }.resume()
     }
 
     @objc private func reload() {
         // Start the walk again from the top: a pull-to-refresh after a move
         // should find the new home rather than retry the one that just failed.
-        index = 0
         load()
-    }
-
-    /// Move to the next candidate, or give up and explain.
-    private func advance() {
-        index += 1
-        if index < order.count {
-            load()
-        } else {
-            index = 0
-            showOffline()
-        }
     }
 
     /// Shown when the site cannot be reached, so a dead connection explains
@@ -128,44 +167,20 @@ extension ViewController: WKNavigationDelegate {
         refresher.endRefreshing()
     }
 
+    /// By the time anything loads, a candidate has already answered, so a
+    /// failure here is a genuine one - a dropped connection mid-load - and the
+    /// offline page is the honest response to it. No advancing, no cancelling,
+    /// nothing to race with the resolver.
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        handleFailure(error)
+        refresher.endRefreshing()
+        showOffline()
     }
 
     func webView(_ webView: WKWebView,
                  didFailProvisionalNavigation navigation: WKNavigation!,
                  withError error: Error) {
-        handleFailure(error)
-    }
-
-    /// A cancellation is always one of ours: cancelling a 404 below makes WebKit
-    /// report the abandoned navigation back here as a failure. Advancing on it
-    /// would step past the candidate just moved to and blank the app on the
-    /// exact case this whole mechanism exists to handle.
-    private func handleFailure(_ error: Error) {
         refresher.endRefreshing()
-        guard (error as NSError).code != NSURLErrorCancelled else { return }
-        advance()
-    }
-
-    /// A moved site does not fail the navigation - GitHub Pages answers a dead
-    /// URL with its own 404 page, which loads perfectly well and would sit there
-    /// looking like the app was broken. So the status code decides, not the
-    /// absence of an error.
-    func webView(_ webView: WKWebView,
-                 decidePolicyFor navigationResponse: WKNavigationResponse,
-                 decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
-        guard navigationResponse.isForMainFrame,
-              let response = navigationResponse.response as? HTTPURLResponse else {
-            decisionHandler(.allow); return
-        }
-        if response.statusCode >= 400 {
-            decisionHandler(.cancel)
-            advance()
-            return
-        }
-        UserDefaults.standard.set(siteURL, forKey: Self.savedKey)
-        decisionHandler(.allow)
+        showOffline()
     }
 
     /// Keep the app on its own site; send anything else (EDGAR filing links,

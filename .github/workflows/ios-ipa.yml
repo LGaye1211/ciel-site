@@ -20,13 +20,21 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-14
+    # macos-14 ships Xcode 15.4, whose iOS SDK is two majors behind the phone
+    # this targets. macos-15 carries Xcode 16, and project.yml pins the project
+    # format low enough that either runner can read what XcodeGen writes.
+    runs-on: macos-15
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
       - name: Show toolchain
-        run: xcodebuild -version
+        # Both versions, because the failure that cost a build was a mismatch
+        # between them: an unpinned XcodeGen wrote a project format the pinned
+        # Xcode could not open. Neither version alone would have shown it.
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i ios || true
 
       - name: Generate the Xcode project
         # The project is generated from ios/CielSleeve/project.yml rather than
@@ -34,6 +42,7 @@ jobs:
         # badly, and cannot be sanity-checked without a Mac.
         run: |
           brew install xcodegen
+          xcodegen --version
           cd ios/CielSleeve && xcodegen generate
           # Printed so a scheme mismatch is obvious in the log rather than
           # surfacing as an opaque "scheme not found" from xcodebuild.

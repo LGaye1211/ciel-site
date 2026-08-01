@@ -106,6 +106,11 @@ def company_row(company, rank):
         "runway_months": (None if m.get("cash_flow_positive") else m.get("runway_months")),
         "cash_flow_positive": m.get("cash_flow_positive", False),
         "dilution": m.get("dilution_yoy"),
+        # Published because a sell trigger references it. A trigger whose metric
+        # is absent from this row cannot be evaluated on the review screen, and
+        # it fails silently - the position reports "armed" while the check is
+        # skipped. test_schema.py asserts every trigger metric appears here.
+        "debt_to_equity": m.get("debt_to_equity"),
         "net_cash": m.get("net_cash"),
         "quarters": m.get("quarters_reported"),
         "annual_only": getattr(company, "annual_only", False),
