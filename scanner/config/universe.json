@@ -1,0 +1,42 @@
+{
+  "_comment": "Defines what counts as a 'young listed company'. Tune freely - run.py reads this on every run.",
+
+  "max_years_since_first_annual": 8,
+  "min_quarters_of_data": 3,
+  "max_days_since_last_filing": 400,
+
+  "max_total_assets_usd": 20000000000,
+  "min_revenue_ttm_usd": 1000000,
+
+  "allowed_forms_annual": ["10-K", "20-F", "40-F"],
+
+  "sic_blocklist": [
+    "6770", "6199", "6726", "6722", "6798", "6221", "6189",
+    "6552", "6500", "6531", "0000"
+  ],
+  "sic_blocklist_note": "Blank checks, unit investment trusts, REITs, asset-backed issuers, commodity dealers - not operating companies.",
+
+  "name_blocklist_patterns": [
+    "acquisition corp",
+    "acquisition co",
+    "capital corp i+$",
+    "spac",
+    "blank check",
+    "trust$",
+    " etf",
+    " fund$",
+    "index fund",
+    "royalty trust",
+    "depositar"
+  ],
+
+  "leveraged_patterns": [
+    "2x ", "3x ", "ultra", "ultrashort", "inverse", "bear ", "bull ",
+    "leveraged", "daily target"
+  ],
+
+  "frames_quarters_back": 6,
+  "max_companies_to_enrich": 900,
+  "publish_top_n": 150,
+  "write_dossiers_top_n": 400
+}

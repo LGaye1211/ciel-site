@@ -1,0 +1,86 @@
+name: iOS — build unsigned .ipa
+
+# Produces an unsigned .ipa on a macOS runner (free for public repos, Xcode
+# preinstalled) and attaches it to a release, so it can be downloaded straight
+# onto the phone and re-signed at install time by Sideloadly or AltStore.
+#
+# The app is a WKWebView pointed at the live GitHub Pages URL rather than a
+# bundled copy of the site. That means each scanner commit reaches the phone
+# with no rebuild — otherwise every quarterly scan would need a new .ipa and a
+# fresh sideload. Build once; the content stays live.
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'ios-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: xcodebuild -version
+
+      - name: Generate the Xcode project
+        # The project is generated from ios/CielSleeve/project.yml rather than
+        # committed as a .pbxproj: that format is unreadable in review, merges
+        # badly, and cannot be sanity-checked without a Mac.
+        run: |
+          brew install xcodegen
+          cd ios/CielSleeve && xcodegen generate
+
+      - name: Build (unsigned)
+        run: |
+          xcodebuild \
+            -project ios/CielSleeve/CielSleeve.xcodeproj \
+            -scheme CielSleeve \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package .ipa
+        # -exportArchive is deliberately not used: it insists on a signing
+        # configuration. Zipping the .app under Payload/ is the standard way to
+        # produce a valid unsigned .ipa, and it is exactly the input the
+        # sideloading tools expect for re-signing.
+        run: |
+          APP="build/Build/Products/Release-iphoneos/CielSleeve.app"
+          test -d "$APP" || { echo "no .app produced"; exit 1; }
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry CielSleeve-unsigned.ipa Payload
+          ls -lh CielSleeve-unsigned.ipa
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CielSleeve-unsigned-ipa
+          path: CielSleeve-unsigned.ipa
+          retention-days: 90
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: CielSleeve-unsigned.ipa
+          body: |
+            Unsigned build of the CIEL learning-sleeve terminal.
+
+            Install by re-signing with Sideloadly or AltStore. A free Apple ID
+            gives a 7-day certificate that needs periodic refresh; a paid
+            developer account gives a year. That is a property of iOS, not of
+            this build.
+
+            The app loads the live site, so scanner updates arrive without
+            rebuilding or re-installing.
