@@ -941,6 +941,8 @@
       '<div class="qrank tnum">'+c.rank+'</div>'+
       '<div class="qtitle"><div class="qname">'+esc(c.name)+'</div>'+
       '<div class="qmeta">'+meta.join('<span>·</span>')+'</div></div>'+
+      (function(){var q=priceFor(c.slug);
+        return q?'<div class="qpx mono">'+esc(q.currency)+' '+num(q.close,2)+'</div>':'';})()+
       '<div class="qscore"><b class="tnum">'+num(c.score,1)+'</b><span>PRIORITY</span></div>'+
       '<div class="dims">'+dims+'</div>'+
       '<svg class="spark qspark" data-spark="'+(c.spark_revenue||[]).join(',')+'" data-color="blue" '+
@@ -1008,6 +1010,9 @@
 
     var meta=[];
     if(d.ticker)meta.push('<b class="mono">'+esc(d.ticker)+'</b>');
+    var dpx=priceFor(d.slug);
+    if(dpx)meta.push('<b class="mono" style="color:var(--gold)">'+esc(dpx.currency)+' '+
+      num(dpx.close,2)+'</b>');
     if(d.exchanges&&d.exchanges.length)meta.push(esc(d.exchanges.join(', ')));
     if(d.sector)meta.push(esc(d.sector));
     if(d.listed_years!=null)meta.push('listed '+num(d.listed_years,1)+' years');
