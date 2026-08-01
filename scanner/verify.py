@@ -121,6 +121,38 @@ def main():
     if not missing and not oversized:
         print("ok  every referenced dossier exists and is within budget")
 
+    # A sell trigger the review screen cannot evaluate is the worst kind of bug
+    # this tool can have: the position reports itself armed and the check is
+    # quietly skipped. It stayed hidden because nothing tied the trigger metrics
+    # to the fields latest.json actually publishes. This is that tie.
+    #
+    # `going_concern` is the deliberate exception. It is a hard disqualifier, so
+    # a company that develops it leaves the universe rather than tripping a
+    # trigger, and the UI says so on the position instead of pretending.
+    ROW_ALIASES = {"revenue_growth_yoy": "revenue_growth", "dilution_yoy": "dilution"}
+    UNCHECKABLE = {"going_concern"}
+
+    row_fields = set(companies[0].keys()) if companies else set()
+    trigger_metrics = set()
+    for row in companies:
+        path = os.path.join(DATA, row.get("detail", ""))
+        if not os.path.exists(path):
+            continue
+        with open(path, "r", encoding="utf-8") as handle:
+            for trigger in json.load(handle).get("triggers", []):
+                if trigger.get("metric"):
+                    trigger_metrics.add(trigger["metric"])
+    orphans = sorted(
+        m for m in trigger_metrics
+        if m not in UNCHECKABLE and ROW_ALIASES.get(m, m) not in row_fields
+    )
+    for metric in orphans:
+        errors += fail("trigger metric %r is armed on positions but never published in "
+                       "latest.json, so it can never fire" % metric)
+    if not orphans:
+        print("ok  every checkable trigger metric (%d) is published in latest.json"
+              % len(trigger_metrics - UNCHECKABLE))
+
     # Honesty contract: a scored claim with no evidence behind it is a bug.
     checked = bare = 0
     for row in companies[:40]:

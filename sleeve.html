@@ -1094,23 +1094,51 @@
   function livePosition(slug){
     return ((L&&L.companies)||[]).filter(function(c){return c.slug===slug;})[0]||null;
   }
+  /* A trigger the scan cannot evaluate is reported as such rather than
+     skipped. The first version dropped any metric missing from the queue row
+     and any `is_true` predicate straight onto the floor, so a position saying
+     "5 triggers armed" was in fact watching three: going-concern and
+     debt-to-equity were never published in latest.json and silently did
+     nothing. A safety mechanism that reports itself armed while being
+     incapable of firing is worse than no mechanism, because it is trusted. */
   function checkTriggers(pos){
     var live=livePosition(pos.slug);
-    if(!live)return {fired:[],near:[],stale:true};
+    if(!live)return {fired:[],near:[],unchecked:[],stale:true};
     // Map the queue row back onto the metric names the triggers reference.
     var now={gross_margin:live.gross_margin,revenue_growth_yoy:live.revenue_growth,
-      dilution_yoy:live.dilution,runway_months:live.cash_flow_positive?999:live.runway_months};
-    var fired=[],near=[];
+      dilution_yoy:live.dilution,debt_to_equity:live.debt_to_equity,
+      runway_months:live.cash_flow_positive?999:live.runway_months};
+    var fired=[],near=[],unchecked=[];
     (pos.triggers||[]).forEach(function(t){
+      // Going-concern doubt is a hard disqualifier in the scan, so a company
+      // that develops it leaves the universe entirely. It surfaces as the
+      // position dropping out of the scan, never as this trigger firing.
+      if(t.comparison==='is_true'){
+        unchecked.push({t:t,why:'not a published figure — this one shows up as the '+
+          'company dropping out of the scan, because it is a hard disqualifier'});
+        return;
+      }
       var v=now[t.metric];
-      if(v==null||t.comparison==='is_true')return;
+      if(v==null){
+        unchecked.push({t:t,why:'this figure is not in the current scan output'});
+        return;
+      }
       var hit=t.comparison==='below'?v<t.threshold:v>t.threshold;
       var margin=t.threshold?Math.abs(v-t.threshold)/Math.abs(t.threshold):1;
       if(hit)fired.push({t:t,v:v});
       else if(margin<0.2)near.push({t:t,v:v,margin:margin});
     });
-    return {fired:fired,near:near,stale:false,live:live};
+    return {fired:fired,near:near,unchecked:unchecked,stale:false,live:live};
   }
+  /* States what is actually being watched, not what was armed. */
+  function watchedCount(pos,state){
+    var total=(pos.triggers||[]).length;
+    if(state.stale)return total+' triggers armed, none checkable';
+    var blind=(state.unchecked||[]).length;
+    return blind ? (total-blind)+' of '+total+' triggers checked this scan'
+                 : total+' triggers checked this scan';
+  }
+
   function fmtMetric(metric,v){
     if(v==null)return '—';
     if(metric==='runway_months')return num(v)+' months';
@@ -1136,7 +1164,7 @@
           '<h3>'+esc(p.name||s)+(p.ticker?' <span class="mono sub">'+esc(p.ticker)+'</span>':'')+'</h3>'+
           '<div class="sub">accepted '+esc((p.accepted_at||'').slice(0,10))+
           ' at confidence '+esc(p.confidence||'—')+'/5 · '+(isNaN(days)?'':days+' days held')+
-          ' · '+((p.triggers||[]).length)+' triggers armed</div>';
+          ' · '+watchedCount(p,state)+'</div>';
 
         if(state.stale){
           h+='<p class="sub" style="margin-top:9px;color:var(--warn)">Not in the latest scan — it may '+
@@ -1163,6 +1191,17 @@
           }).join('')+'</div>';
         }else{
           h+='<p class="sub" style="margin-top:9px;color:var(--good)">No trigger near firing.</p>';
+        }
+
+        // Named individually, because "3 of 5 checked" invites the assumption
+        // that the other two are merely quiet.
+        if((state.unchecked||[]).length){
+          h+='<details style="margin-top:9px"><summary class="sub" style="cursor:pointer;color:var(--warn)">'+
+            state.unchecked.length+' trigger'+(state.unchecked.length>1?'s':'')+
+            ' cannot be checked automatically</summary><ul class="gaps" style="margin-top:6px">'+
+            state.unchecked.map(function(u){
+              return '<li>'+esc(u.t.label)+' — '+esc(u.why)+'</li>';
+            }).join('')+'</ul></details>';
         }
 
         // Calibration replay — Appendix B's retrospective, reconstructed.
@@ -1368,32 +1407,40 @@
     'dossier — percentages to one decimal, money in the units given. Do not use headings for a '+
     'two-paragraph answer.';
 
+  /* Ordered stable-first, and that order is the whole point.
+     A prompt cache matches on a prefix, so anything that changes between
+     requests invalidates everything after it. The queue digest, the coverage
+     notes and the charter are identical no matter which company is open and
+     make up most of the payload; the dossier changes every time you tap a
+     different row. Putting the dossier first - which is what this did at
+     first - meant opening a second company threw away the entire cached
+     context and re-billed the lot. Stable blocks lead, the cache breakpoint
+     sits at the end of them, and the volatile dossier trails behind
+     uncached. */
   function askContext(){
     var blocks=[{type:'text',text:ASK_RULES}];
-    var parts=[];
-    if(ASK.company){
-      parts.push('THE COMPANY CURRENTLY OPEN ON SCREEN — the full dossier as committed:\n'+
-        JSON.stringify(ASK.company));
-    }
+    var stable=[];
     var digest=queueDigest();
     if(digest.length){
-      parts.push('THE FULL RESEARCH QUEUE — '+digest.length+' companies that survived screening, '+
+      stable.push('THE FULL RESEARCH QUEUE — '+digest.length+' companies that survived screening, '+
         'summary fields only. Use this for comparisons and for questions across the whole list:\n'+
         JSON.stringify(digest));
     }
     if(M){
-      parts.push('SCAN METADATA — cohort, source status and the stated coverage gaps:\n'+
+      stable.push('SCAN METADATA — cohort, source status and the stated coverage gaps:\n'+
         JSON.stringify({generated_at:M.generated_at,cohort:M.cohort,counts:M.counts,
           disqualifications:M.disqualifications,coverage_gaps:M.coverage_gaps}));
     }
     if(CHARTER){
-      parts.push('ARTHUR\'S CHARTER — the rules this tool enforces:\n'+JSON.stringify(CHARTER));
+      stable.push('ARTHUR\'S CHARTER — the rules this tool enforces:\n'+JSON.stringify(CHARTER));
     }
-    if(parts.length){
-      // Cached on the trailing block: the dossier and queue are identical across
-      // every follow-up in a thread, so only the new question is billed at full
-      // rate after the first exchange.
-      blocks.push({type:'text',text:parts.join('\n\n'),cache_control:{type:'ephemeral'}});
+    if(stable.length){
+      blocks.push({type:'text',text:stable.join('\n\n'),cache_control:{type:'ephemeral'}});
+    }
+    if(ASK.company){
+      blocks.push({type:'text',
+        text:'THE COMPANY CURRENTLY OPEN ON SCREEN — the full dossier as committed:\n'+
+             JSON.stringify(ASK.company)});
     }
     return blocks;
   }
@@ -1607,12 +1654,19 @@
     }).then(function(){
       // A refusal carries no content, so reading the empty block as an answer
       // would render a blank bubble and look like a bug.
+      //
+      // Both of these leave the question unanswered, so it comes back out of
+      // the log. A turn with no reply after it means the next request sends two
+      // user messages in a row, which the API rejects - one refusal would
+      // poison every later question in the thread rather than just its own.
       if(refused){
         out.className='msg err';
         out.innerHTML='Claude declined to answer that one. Rephrase it and try again.';
+        ASK.log.pop();
       }else if(!text){
         out.className='msg err';
         out.innerHTML='Empty response. Ask again.';
+        ASK.log.pop();
       }else{
         out.innerHTML=md(text);
         ASK.log.push({role:'assistant',content:text});
