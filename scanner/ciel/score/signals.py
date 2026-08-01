@@ -294,6 +294,32 @@ def insider_selling(company, m):
         % pct(value), m.get("insider_selling_url", company.filing_url("")))]
 
 
+@signal("team_evidence")
+def team_evidence(company, m):
+    """How much we actually know about the team.
+
+    Without this, a company with one usable ownership signal redistributes the
+    whole dimension onto it and scores maximum on the thing the charter cares
+    most about - which is exactly backwards. Same principle as the coverage
+    dimension, applied within team.
+    """
+    filings = m.get("insider_filings_read")
+    if filings is None:
+        return None, None, []
+    insiders = m.get("insider_count") or 0
+    known = sum(1 for key in ("insider_ownership", "insider_selling") if m.get(key) is not None)
+    scaled = band(filings, [(0, 0), (3, 35), (8, 70), (14, 100)]) * (0.5 + 0.25 * known)
+    note = ""
+    if m.get("insider_ownership_unreliable"):
+        note = (" Reported holdings come to %.0f%% of the diluted share count, which points to a "
+                "share class the diluted figure does not cover, so ownership is not scored here."
+                % (m["insider_ownership_unreliable"] * 100))
+    return float(filings), min(100.0, scaled), [Evidence(
+        "%d ownership filing%s read, naming %d insider%s.%s" % (
+            filings, "" if filings == 1 else "s", insiders, "" if insiders == 1 else "s", note),
+        company.filing_url(""))]
+
+
 @signal("prior_venture_count")
 def prior_venture_count(company, m):
     value = m.get("prior_venture_count")

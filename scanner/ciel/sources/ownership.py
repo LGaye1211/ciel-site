@@ -23,6 +23,13 @@ OWNERSHIP_FORMS = {"3", "4", "5"}
 SELL_CODES = {"S"}
 BUY_CODES = {"P"}
 
+# Above this share of the diluted count, a dual-class structure is a far more
+# likely explanation than genuine near-total insider ownership.
+IMPLAUSIBLE_OWNERSHIP = 0.75
+# Below this many ownership filings, "no sales" means "nothing was filed", not
+# "nobody sold".
+MIN_FILINGS_FOR_SELLING = 3
+
 
 def _doc_url(cik, accession, primary_document):
     """The primaryDocument path carries an XSL renderer prefix that returns the
@@ -142,21 +149,36 @@ def fetch_insiders(session, company, max_filings=12, since=""):
                   key=lambda p: (not p["is_officer"], -(p["shares"] or 0), p["raw_name"]))
 
     held = sum(p["shares"] or 0 for p in team)
-    metrics = {}
+    metrics = {
+        "insider_sold_shares": sold,
+        "insider_bought_shares": bought,
+        "insider_filings_read": len(filings),
+        "insider_count": len(team),
+    }
+
+    diluted = company.metrics.get("shares_now")
     if held > 0:
         metrics["insider_shares"] = held
-        diluted = company.metrics.get("shares_now")
         if diluted and diluted > 0:
-            # Cap at 1: reported share counts and holdings come from different
-            # filings and can disagree at the margin.
-            metrics["insider_ownership"] = min(1.0, held / diluted)
-            metrics["insider_ownership_url"] = company.filing_url(filings[0]["accession"])
-    if sold + held > 0:
+            ratio = held / diluted
+            if ratio > IMPLAUSIBLE_OWNERSHIP:
+                # Holdings exceeding the reported diluted count almost always
+                # means a dual-class structure where the insiders sit in a class
+                # the diluted figure does not count, not that they own the whole
+                # company. Scoring it as near-total alignment put companies at
+                # the top of the ranking on an artefact, so it is reported as
+                # unreliable and left out of the score entirely.
+                metrics["insider_ownership_unreliable"] = round(ratio, 2)
+            else:
+                metrics["insider_ownership"] = ratio
+                metrics["insider_ownership_url"] = company.filing_url(filings[0]["accession"])
+
+    # Zero sales across two filings is not evidence that insiders are holding
+    # firm; it is an absence of evidence. Treat it as unknown rather than as a
+    # perfect score.
+    if len(filings) >= MIN_FILINGS_FOR_SELLING and (sold + held) > 0:
         metrics["insider_selling"] = sold / (sold + held)
         metrics["insider_selling_url"] = company.filing_url(filings[0]["accession"])
-    metrics["insider_sold_shares"] = sold
-    metrics["insider_bought_shares"] = bought
-    metrics["insider_filings_read"] = len(filings)
 
     return [_public(p, company) for p in team], metrics
 

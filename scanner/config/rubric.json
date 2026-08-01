@@ -22,11 +22,13 @@
       "id": "team",
       "label": "Team and history",
       "weight": 30,
+      "note": "Prior-company history needs executive biographies, and no free structured source provides them. What filings do establish is who the officers are, what they hold and what they trade. team_evidence keeps a thin record from redistributing its way to a maximum score on the dimension the charter cares most about.",
       "signals": [
         { "id": "insider_ownership",     "weight": 0.30, "label": "Insider ownership" },
         { "id": "insider_selling",       "weight": 0.25, "label": "Insider selling", "direction": "lower_is_better" },
-        { "id": "prior_venture_count",   "weight": 0.25, "label": "Prior ventures by named officers" },
-        { "id": "prior_ipo_link",        "weight": 0.20, "label": "Officer linked to a company that later listed" }
+        { "id": "team_evidence",         "weight": 0.25, "label": "How much of the team we can see" },
+        { "id": "prior_venture_count",   "weight": 0.10, "label": "Prior ventures by named officers" },
+        { "id": "prior_ipo_link",        "weight": 0.10, "label": "Officer linked to a company that later listed" }
       ]
     },
     {

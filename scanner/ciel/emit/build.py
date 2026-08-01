@@ -103,7 +103,17 @@ def company_row(company, rank):
     }
 
 
+MAX_TEAM = 20
+MAX_CASE_ITEMS = 14
+
+
 def company_dossier(company):
+    """Trim to fit the byte budget rather than overrun it.
+
+    A skipped dossier leaves latest.json referencing a file that is not there,
+    which is a 404 when you tap the row. Dropping the least informative tail is
+    strictly better than dropping the whole record.
+    """
     m = company.metrics
     score = company.score
     series_out = {}
@@ -139,10 +149,12 @@ def company_dossier(company):
         "edgar_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=%s&type=10-K"
                      % company.cik10,
         "summary": company.thesis.get("summary", {}),
-        "bull": company.thesis.get("bull", []),
-        "bear": company.thesis.get("bear", []),
+        "bull": company.thesis.get("bull", [])[:MAX_CASE_ITEMS],
+        "bear": company.thesis.get("bear", [])[:MAX_CASE_ITEMS],
         "triggers": company.triggers,
-        "team": company.team,
+        # Sorted by holding, so the tail dropped here is the least informative.
+        "team": company.team[:MAX_TEAM],
+        "team_truncated": max(0, len(company.team) - MAX_TEAM),
         "team_note": "Taken from Form 3/4/5 ownership filings over the last four quarters. These "
                      "are the people who filed, not necessarily the whole team - anyone who "
                      "neither holds nor trades shares does not appear. Holdings and sales are "
@@ -153,6 +165,21 @@ def company_dossier(company):
         "series": series_out,
         "score": score.to_json() if score else {},
     }
+
+
+def trim_dossier(dossier):
+    """Drop the least informative content until the record fits its budget."""
+    dossier["team"] = dossier.get("team", [])[:8]
+    dossier["bull"] = dossier.get("bull", [])[:6]
+    dossier["bear"] = dossier.get("bear", [])[:8]
+    for name, series in list(dossier.get("series", {}).items()):
+        series["values"] = series["values"][-8:]
+        series["labels"] = series["labels"][-8:]
+        series["accessions"] = series["accessions"][-8:]
+    for contribution in dossier.get("score", {}).get("contributions", []):
+        contribution["evidence"] = contribution.get("evidence", [])[:2]
+    dossier["trimmed"] = True
+    return dossier
 
 
 def manifest(cohort, previous, counts, sources, rubric_version, generated_at, heartbeat,

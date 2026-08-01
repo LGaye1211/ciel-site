@@ -239,12 +239,16 @@ def main():
     written = 0
     for company in ordered[:dossier_n]:
         path = os.path.join(DATA_DIR, "companies", "%s.json" % company.slug)
+        dossier = emit.company_dossier(company)
         try:
-            _, did = emit.write_json(path, emit.company_dossier(company),
-                                     emit.BUDGETS["company"])
-            written += 1 if did else 0
-        except ValueError as exc:
-            log("dossier over budget, skipped: %s" % exc)
+            _, did = emit.write_json(path, dossier, emit.BUDGETS["company"])
+        except ValueError:
+            # Trim the evidence tail rather than skip the file: a missing
+            # dossier is a 404 when the row is tapped.
+            dossier = emit.trim_dossier(dossier)
+            _, did = emit.write_json(path, dossier, emit.BUDGETS["company"])
+            log("dossier trimmed to fit budget: %s" % company.slug)
+        written += 1 if did else 0
     log("wrote %d dossiers (%d changed)" % (min(len(ordered), dossier_n), written))
 
     cohort_path = os.path.join(DATA_DIR, "quarters", "%s.json" % cohort)

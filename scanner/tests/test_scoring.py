@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(HERE))
 
 from ciel.http import _Bucket                                  # noqa: E402
 from ciel.model import Company, Point, Series                  # noqa: E402
-from ciel.score import bearcase, disqualify, engine, thesis, triggers  # noqa: E402
+from ciel.score import bearcase, disqualify, engine, signals, thesis, triggers  # noqa: E402
 from ciel.sources import edgar_submissions as subs             # noqa: E402
 
 CONFIG = os.path.join(os.path.dirname(HERE), "config")
@@ -200,6 +200,46 @@ class TestDisqualifiers(unittest.TestCase):
             self.assertTrue(reason["detail"].strip())
             self.assertGreater(len(reason["detail"]), 30,
                                "'%s eliminated' with no explanation is just a number" % reason["id"])
+
+
+class TestTeamEvidence(unittest.TestCase):
+    """Found in a live run: dual-class structures reported 100% insider
+    ownership, and a company with one usable team signal redistributed the
+    dimension onto it and scored 30/30 on the thing the charter cares most
+    about."""
+
+    def setUp(self):
+        self.rubric = load("rubric.json")
+
+    def _team_score(self, extra):
+        c = healthy_company()
+        c.metrics.update(extra)
+        engine.evaluate(c, self.rubric)
+        return c.score.dimensions["team"]
+
+    def test_thin_evidence_cannot_max_the_dimension(self):
+        thin = self._team_score({"insider_filings_read": 1, "insider_count": 1,
+                                 "insider_selling": 0.0})
+        rich = self._team_score({"insider_filings_read": 14, "insider_count": 8,
+                                 "insider_selling": 0.0, "insider_ownership": 0.15})
+        self.assertLess(thin, rich)
+        self.assertLess(thin, 30.0 * 0.7,
+                        "one weak signal must not reach near-maximum on team")
+
+    def test_implausible_ownership_is_not_scored(self):
+        scored = self._team_score({"insider_filings_read": 10, "insider_count": 5,
+                                   "insider_ownership_unreliable": 1.0})
+        credible = self._team_score({"insider_filings_read": 10, "insider_count": 5,
+                                     "insider_ownership": 0.30})
+        self.assertLess(scored, credible,
+                        "a dual-class artefact must not outscore real alignment")
+
+    def test_evidence_note_explains_the_exclusion(self):
+        c = healthy_company()
+        c.metrics.update({"insider_filings_read": 6, "insider_count": 4,
+                          "insider_ownership_unreliable": 1.4})
+        _raw, _scaled, evidence = signals.REGISTRY["team_evidence"](c, c.metrics)
+        self.assertIn("share class", evidence[0].text)
 
 
 class TestNameHeuristics(unittest.TestCase):
