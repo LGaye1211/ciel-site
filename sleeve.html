@@ -1471,6 +1471,77 @@
      is worth. The three are kept visually distinct on purpose: cost basis is a
      fact you entered, value is a measurement that depends on a feed, and the
      gap between them is the only thing that counts as performance. */
+  /* ── RETURN ─────────────────────────────────────────
+     Money-weighted return, by the same XIRR that Sharesight and Ghostfolio put
+     at the centre of their reporting - and for the reason the charter makes
+     unavoidable. Rule 1 contributes every quarter, and a simple gain
+     percentage is wrong the moment money arrives at more than one date: buy
+     CHF 1,000, watch it halve, add CHF 9,000 and recover 10%, and naive
+     arithmetic reports a gain while the money-weighted answer knows what
+     actually happened to the francs. Appendix A asks whether the sleeve beat
+     the core over three consecutive years. That question cannot be answered
+     honestly any other way.
+
+     Newton first because it converges in a handful of iterations on
+     well-behaved flows, bisection after it because Newton diverges on the
+     ragged ones, and null rather than a number when neither lands - an
+     unconverged rate presented as a return would be a lie with decimal
+     places. */
+  function xirr(flows){
+    if(!flows||flows.length<2)return null;
+    var t0=flows[0].date;
+    var neg=flows.some(function(f){return f.amount<0;});
+    var pos=flows.some(function(f){return f.amount>0;});
+    if(!neg||!pos)return null;   // a rate needs money both out and back
+    function npv(rate){
+      var total=0;
+      for(var i=0;i<flows.length;i++){
+        var years=(flows[i].date-t0)/(365.25*86400000);
+        total+=flows[i].amount/Math.pow(1+rate,years);
+      }
+      return total;
+    }
+    var rate=0.1;
+    for(var i=0;i<60;i++){
+      var f=npv(rate),step=0.0001;
+      var slope=(npv(rate+step)-f)/step;
+      if(!isFinite(slope)||Math.abs(slope)<1e-12)break;
+      var next=rate-f/slope;
+      if(!isFinite(next)||next<=-0.9999)break;
+      if(Math.abs(next-rate)<1e-7)return Math.abs(npv(next))<1e-4?next:null;
+      rate=next;
+    }
+    var lo=-0.95,hi=10;
+    if(npv(lo)*npv(hi)>0)return null;
+    for(var j=0;j<200;j++){
+      var mid=(lo+hi)/2;
+      if(npv(lo)*npv(mid)<=0)hi=mid;else lo=mid;
+    }
+    return (hi+lo)/2;
+  }
+
+  /* Splits the return into the part the business earned and the part the franc
+     did. Every holding here is a US listing and the reference currency is CHF,
+     so a double-digit move in the dollar swamps a year of trading. Reporting a
+     single blended figure would credit the company for a currency move, or
+     blame it for one. fx_at_buy is stored on every purchase precisely so this
+     can be separated afterwards. */
+  function returnSplit(pos){
+    var px=priceFor(pos.slug);
+    if(!px||!pos.shares||!pos.price_paid||!pos.fx_at_buy)return null;
+    var fxNow=fxToChf(px.currency||pos.currency||'USD');
+    if(fxNow==null)return null;
+    var localThen=pos.shares*pos.price_paid;
+    var localNow=pos.shares*px.close;
+    return {
+      // What the shares did, held at the rate on the day you bought.
+      business:(localNow-localThen)*pos.fx_at_buy,
+      // What the same shares did purely because the franc moved.
+      currency:localNow*(fxNow-pos.fx_at_buy),
+      valueChf:localNow*fxNow
+    };
+  }
+
   function portfolioTotals(){
     var invested=0,value=0,priced=0,held=0,unpriced=[];
     Object.keys(POS).forEach(function(s){
@@ -1548,6 +1619,78 @@
         '</div></div>';
     });
     h+='</div>';
+
+    /* Appendix A asks for the total cost borne, in francs and as a percentage.
+       It is answerable exactly from what was recorded at purchase, needs no
+       price feed, and is the one number in this tool that is certain. */
+    var costs=0,gross=0;
+    slugs.forEach(function(s){costs+=POS[s].costs_chf||0;gross+=POS[s].amount_chf||0;});
+    var flows=[];
+    slugs.forEach(function(s){
+      var when=Date.parse(POS[s].bought_at||POS[s].accepted_at||'');
+      if(!isNaN(when))flows.push({date:when,amount:-(POS[s].amount_chf||0)});
+    });
+    if(T.complete&&flows.length)flows.push({date:Date.now(),amount:T.value});
+    flows.sort(function(a,b){return a.date-b.date;});
+    var rate=T.complete?xirr(flows):null;
+
+    var split={business:0,currency:0,ok:T.complete};
+    slugs.forEach(function(s){
+      var r=returnSplit(POS[s]);
+      if(!r){split.ok=false;return;}
+      split.business+=r.business;split.currency+=r.currency;
+    });
+
+    h+='<div class="card reveal" style="margin-top:12px"><h3>How it is actually doing</h3>'+
+      '<div class="totals">'+
+        '<div><b>'+(rate==null?'—':(rate>=0?'+':'')+pct(rate,1))+'</b>'+
+          '<span class="sub">a year, money-weighted</span></div>'+
+        '<div><b class="'+(split.ok?(split.business>=0?'up':'down'):'')+'">'+
+          (split.ok?(split.business>=0?'+':'')+chf(split.business,0):'—')+'</b>'+
+          '<span class="sub">from the businesses</span></div>'+
+        '<div><b class="'+(split.ok?(split.currency>=0?'up':'down'):'')+'">'+
+          (split.ok?(split.currency>=0?'+':'')+chf(split.currency,0):'—')+'</b>'+
+          '<span class="sub">from the franc</span></div>'+
+        '<div><b>'+pct(gross?costs/gross:0,2)+'</b>'+
+          '<span class="sub">lost to costs, '+chf(costs,2)+'</span></div>'+
+      '</div>'+
+      '<p class="sub" style="line-height:1.6;margin-top:8px">'+
+      (rate==null
+        ? 'The annual rate is money-weighted — the same XIRR a professional report uses — because '+
+          'you contribute quarterly and a plain gain percentage stops being true the moment money '+
+          'arrives at more than one date. It needs a price to compute.'
+        : 'Money-weighted, so contribution timing is counted rather than averaged away. Over a '+
+          'window this short the figure is noise; the dossier says three consecutive years is the '+
+          'shortest span worth reading.')+
+      '</p>'+
+      '<p class="sub" style="line-height:1.6;margin-top:6px">'+
+      (split.ok
+        ? 'The split matters more than the total: every holding here is a US listing and you count '+
+          'in francs, so a move in the dollar can swamp a year of trading. A single blended number '+
+          'would credit a company for a currency move, or blame it for one.'
+        : 'Once prices are connected this separates what the businesses earned from what the franc '+
+          'did — the rate on the day you bought is stored on every purchase so the two can be '+
+          'told apart.')+
+      '</p></div>';
+
+    /* Appendix A: "was the withholding tax correctly declared and credited?"
+       Every company in this universe is a US listing, so this is not a
+       hypothetical - it is 15 percentage points of every dividend. */
+    h+='<div class="card reveal" style="margin-top:12px"><h3>Withholding tax on US dividends</h3>'+
+      '<p class="sub" style="line-height:1.65">The United States withholds <b>30%</b> of dividends '+
+      'paid to a foreign holder by default. The Switzerland–US treaty cuts that to <b>15%</b> for '+
+      'a private investor, but only if a <b>W-8BEN</b> is on file with the broker <i>before</i> '+
+      'the dividend is paid — it is not applied retroactively, and recovering the difference '+
+      'afterwards means filing a 1040-NR with the IRS. The remaining 15% is then reclaimed against '+
+      'Swiss tax through form <b>DA-1</b> with the annual return.</p>'+
+      '<p class="sub" style="line-height:1.65;margin-top:8px">Two things follow. Sign the W-8BEN '+
+      'when the account is opened, and renew it — it lapses after three calendar years. And note '+
+      'that a dividend yield quoted anywhere is a pre-tax number: at 15% withholding a 2% yield is '+
+      '1.7% in hand before Swiss income tax touches it.</p>'+
+      '<p class="sub" style="line-height:1.6;margin-top:8px;color:var(--warn)">This is how the tax '+
+      'works, not advice about your situation, and the account will be opened by an adult who '+
+      'should confirm it. Section 4.4 also flags that a parent\'s employer may require '+
+      'pre-clearance for these trades.</p></div>';
 
     h+='<div class="card reveal" style="margin-top:12px"><h3>What this is not</h3>'+
       '<p class="sub" style="line-height:1.65">These are paper positions. Nothing has been ordered, '+
