@@ -7,6 +7,7 @@ reaches the branch the site serves from.
 
 import json
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -22,9 +23,51 @@ BANNED = ["skyrocket", "guaranteed", "will succeed", "buy signal",
           "predicted return", "sure thing", "can't lose"]
 
 
+# The Anthropic key and the GitHub token are entered on the device and held in
+# localStorage. Neither has any business in a committed file, and this repository
+# is public - a key that reaches a commit is a key that has to be revoked, and
+# git history keeps it reachable long after the file is deleted. So the build
+# refuses rather than trusting anyone to notice.
+SECRET_PATTERNS = [
+    ("Anthropic API key", re.compile(r"sk-ant-[A-Za-z0-9_\-]{16,}")),
+    ("GitHub fine-grained token", re.compile(r"github_pat_[A-Za-z0-9_]{20,}")),
+    ("GitHub classic token", re.compile(r"gh[posru]_[A-Za-z0-9]{30,}")),
+]
+
+TEXT_SUFFIXES = (".html", ".js", ".json", ".py", ".yml", ".yaml", ".md",
+                 ".swift", ".plist", ".txt")
+
+
 def fail(message):
     print("FAIL: %s" % message)
     return 1
+
+
+def check_secrets(text, label):
+    errors = 0
+    for name, pattern in SECRET_PATTERNS:
+        if pattern.search(text):
+            errors += fail("%s appears to contain a live %s - revoke it now, then remove it"
+                           % (label, name))
+    return errors
+
+
+def scan_tree(root):
+    errors = 0
+    if not os.path.isdir(root):
+        return 0
+    for base, _dirs, names in os.walk(root):
+        for name in names:
+            if not name.endswith(TEXT_SUFFIXES):
+                continue
+            path = os.path.join(base, name)
+            try:
+                with open(path, "r", encoding="utf-8", errors="ignore") as handle:
+                    body = handle.read()
+            except OSError:
+                continue
+            errors += check_secrets(body, os.path.relpath(path, ROOT))
+    return errors
 
 
 def main():
@@ -102,12 +145,20 @@ def main():
     page = os.path.join(ROOT, "sleeve.html")
     if os.path.exists(page):
         with open(page, "r", encoding="utf-8") as handle:
-            text = handle.read().lower()
-        for word in BANNED:
-            if word in text:
-                errors += fail("banned framing in sleeve.html: %r" % word)
-        else:
+            raw = handle.read()
+        text = raw.lower()
+        # A `for/else` here would print "ok" unconditionally - the else clause of
+        # a for loop runs whenever the loop is not broken out of, which it never
+        # was. The check passed every run regardless of what the page said.
+        hits = [word for word in BANNED if word in text]
+        for word in hits:
+            errors += fail("banned framing in sleeve.html: %r" % word)
+        if not hits:
             print("ok  sleeve.html clear of forecast framing")
+        errors += check_secrets(raw, "sleeve.html")
+
+    for name in ("charter", "data", "ios", ".github"):
+        errors += scan_tree(os.path.join(ROOT, name))
 
     print("\n%s" % ("PASS" if not errors else "%d problem(s)" % errors))
     return 1 if errors else 0

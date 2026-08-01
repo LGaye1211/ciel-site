@@ -339,12 +339,89 @@
     .qrow{grid-template-columns:38px minmax(240px,1fr) 120px 190px 72px}
   }
 
+  /* ── ASK — the Claude panel ─────────────────────────
+     A bottom sheet rather than a sidebar, because the phone is the primary
+     surface and a sidebar at 390px is a full-screen takeover with extra steps.
+     Colours are all existing tokens: adding a new one means declaring it in
+     four places and the print block, and nothing here needs a new hue. */
+  .askfab{position:fixed;right:14px;z-index:60;
+    bottom:calc(16px + env(safe-area-inset-bottom));
+    height:46px;padding:0 16px;border-radius:999px;border:1px solid var(--border-2);
+    background:var(--card-solid);color:var(--ink);box-shadow:var(--shadow);
+    display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:650}
+  /* The dossier has a sticky accept bar pinned to the bottom, and at 390px the
+     button covers the right third of it. Lift the button clear when that bar is
+     on screen rather than letting Ask sit on top of the primary action. */
+  body.has-accept .askfab{bottom:calc(120px + env(safe-area-inset-bottom))}
+  .askfab svg{width:16px;height:16px;color:var(--gold)}
+  .askfab:hover{border-color:var(--gold)}
+  .asksheet{position:fixed;inset:auto 0 0 0;z-index:70;display:none;
+    background:var(--card-solid);border-top:1px solid var(--border-2);
+    border-radius:16px 16px 0 0;box-shadow:0 -18px 50px rgba(0,0,0,.32);
+    max-height:min(86vh,860px);flex-direction:column}
+  .asksheet.on{display:flex}
+  .askscrim{position:fixed;inset:0;z-index:65;display:none;background:rgba(0,0,0,.42)}
+  .askscrim.on{display:block}
+  .askhead{display:flex;align-items:center;gap:9px;padding:12px 14px 10px;
+    border-bottom:1px solid var(--border);flex:none}
+  .askhead h3{font-size:13px;font-weight:700;color:var(--ink);margin:0}
+  .askhead .sub{font-size:10.5px;margin-top:1px}
+  .askhead .askic{width:28px;height:28px;border-radius:9px;flex:none;display:grid;place-items:center;
+    background:color-mix(in srgb,var(--gold) 14%,transparent);color:var(--gold)}
+  .askhead .askic svg{width:14px;height:14px}
+  .askx{margin-left:auto;width:34px;height:34px;border-radius:9px;border:1px solid var(--border);
+    background:var(--inset);color:var(--ink-2);display:grid;place-items:center;flex:none}
+  .askx svg{width:14px;height:14px}
+  .askbody{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px;flex:1 1 auto}
+  .askchips{display:flex;gap:6px;overflow-x:auto;padding:9px 14px 0;flex:none;scrollbar-width:none}
+  .askchips::-webkit-scrollbar{display:none}
+  .askchip{flex:none;padding:6px 11px;border-radius:999px;border:1px solid var(--border);
+    background:var(--inset);color:var(--ink-2);font-size:11px;font-weight:600;white-space:nowrap}
+  .askchip:hover{border-color:var(--gold);color:var(--ink)}
+  .askform{display:flex;gap:8px;align-items:flex-end;padding:10px 14px;flex:none;
+    padding-bottom:calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--border)}
+  .askform textarea{flex:1;resize:none;min-height:42px;max-height:132px;padding:11px;
+    border-radius:11px;border:1px solid var(--border);background:var(--inset);
+    color:var(--ink);font:inherit;font-size:13px;line-height:1.45}
+  .askform textarea:focus{outline:none;border-color:var(--gold)}
+  .asksend{width:42px;height:42px;flex:none;border-radius:11px;border:1px solid var(--gold);
+    background:color-mix(in srgb,var(--gold) 16%,transparent);color:var(--gold-lg);
+    display:grid;place-items:center}
+  .asksend:disabled{opacity:.4;border-color:var(--border);color:var(--muted);background:var(--inset)}
+  .asksend svg{width:16px;height:16px}
+  .msg{margin-bottom:13px;font-size:12.5px;line-height:1.65}
+  .msg.me{margin-left:auto;max-width:86%;background:var(--inset);border:1px solid var(--border);
+    border-radius:12px 12px 3px 12px;padding:9px 11px;color:var(--ink);width:fit-content}
+  .msg.ai{color:var(--ink)}
+  .msg.ai p{margin:0 0 8px}
+  .msg.ai ul{margin:0 0 8px;padding-left:17px}
+  .msg.ai li{margin-bottom:4px}
+  .msg.ai strong{color:var(--ink);font-weight:700}
+  .msg.ai code{font-family:'JetBrains Mono',monospace;font-size:11.5px;
+    background:var(--inset);padding:1px 4px;border-radius:4px;color:var(--gold-lg)}
+  .msg.err{color:var(--crit);font-size:11.5px;border-left:2px solid var(--crit);padding-left:9px}
+  .askctx{font-size:10.5px;color:var(--dim);margin-bottom:11px;
+    padding-bottom:9px;border-bottom:1px dashed var(--border)}
+  .askctx b{color:var(--gold)}
+  .thinking{display:inline-flex;gap:4px;align-items:center;color:var(--dim);font-size:11px}
+  .thinking i{width:5px;height:5px;border-radius:50%;background:var(--dim);
+    animation:blip 1.2s infinite ease-in-out}
+  .thinking i:nth-child(2){animation-delay:.18s}
+  .thinking i:nth-child(3){animation-delay:.36s}
+  @keyframes blip{0%,60%,100%{opacity:.25}30%{opacity:1}}
+  @media(prefers-reduced-motion:reduce){.thinking i{animation:none;opacity:.6}}
+  @media(min-width:900px){
+    .asksheet{inset:auto 18px 18px auto;width:460px;border-radius:16px;
+      border:1px solid var(--border-2);max-height:min(78vh,760px)}
+    .askscrim{background:rgba(0,0,0,.2)}
+  }
+
   @media print{
     :root{--page:#fff;--plane:#fff;--card-a:#fff;--card-b:#fff;--card-solid:#fff;--inset:#fafafa;
       --ink:#000;--ink-2:#222;--muted:#555;--dim:#888;--border:#ddd;--border-2:#bbb;
       --blue:#14458f;--gold:#7a6220;--good:#0a6b30;--crit:#a02020;--warn:#9a6b06;
       --bull:#0a6b30;--bear:#a02020;--slot:#7a6220;--track:#eee;--shadow:none}
-    header,.accept,.iconbtn{display:none}
+    header,.accept,.iconbtn,.askfab,.asksheet,.askscrim{display:none}
     body{background:#fff;padding:0}
     .card,.case,.qrow{break-inside:avoid}
   }
@@ -375,6 +452,23 @@
 
 <div id="tip"></div>
 
+<button class="askfab" id="askFab" aria-label="Ask about this" aria-expanded="false">Ask</button>
+<div class="askscrim" id="askScrim"></div>
+<div class="asksheet" id="askSheet" role="dialog" aria-modal="true" aria-label="Ask about this company">
+  <div class="askhead">
+    <span class="askic" id="askIc"></span>
+    <div><h3>Ask</h3><div class="sub" id="askWhere">the research queue</div></div>
+    <button class="askx" id="askClose" aria-label="Close"></button>
+  </div>
+  <div class="askbody" id="askBody"></div>
+  <div class="askchips" id="askChips"></div>
+  <form class="askform" id="askForm">
+    <textarea id="askInput" rows="1" placeholder="Ask anything about what is on screen…"
+      autocapitalize="sentences" autocorrect="on" spellcheck="true"></textarea>
+    <button class="asksend" id="askSend" type="submit" aria-label="Send"></button>
+  </form>
+</div>
+
 <script>
 (function(){
   'use strict';
@@ -398,7 +492,11 @@
     book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>',
     chart:'<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-4 4"/>',
     info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',
-    filter:'<path d="M3 4h18l-7 8v6l-4 2v-8Z"/>'
+    filter:'<path d="M3 4h18l-7 8v6l-4 2v-8Z"/>',
+    chat:'<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-4-.9L3 21l2-4a8.4 8.4 0 0 1-1-4 8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 7.4Z"/>',
+    send:'<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/>',
+    close:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    key:'<circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 8.3-8.3"/><path d="m17 6 2.5 2.5"/><path d="m14.5 8.5 2.5 2.5"/>'
   };
   function svg(n,c){return '<svg '+(c?'class="'+c+'" ':'')+'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(ICON[n]||'')+'</svg>';}
   function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
@@ -1141,6 +1239,32 @@
         '<button class="btn-primary" id="ghSave" style="margin-top:11px">Save</button>'+
         (pendingCount()?'<div class="blocked" style="color:var(--warn)">'+pendingCount()+
           ' change(s) waiting to sync.</div>':'')+
+      '</div>'+
+
+      '<div class="card reveal" style="margin-top:12px">'+
+        '<h3>Ask — the Claude key</h3>'+
+        '<p class="sub" style="line-height:1.6;margin-bottom:11px">Turns on the <b>Ask</b> button. '+
+        'The key is stored in this device\'s browser storage and nowhere else. It is never '+
+        'committed to the repository, never written into the page, and the scanner never sees it. '+
+        'This site is served publicly by GitHub Pages regardless of whether the repository is '+
+        'public — that is why the key has to live on the phone rather than in the code. '+
+        'Leave it blank and Ask stays off; the rest of the tool works without it.</p>'+
+        '<label class="sub" style="display:block;margin-bottom:4px">Anthropic API key</label>'+
+        '<input id="aiKey" type="password" value="'+esc(aiKey())+'" placeholder="sk-ant-..." '+
+          'style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);'+
+          'background:var(--inset);color:var(--ink);font-size:12px" '+
+          'autocapitalize="off" autocorrect="off" spellcheck="false">'+
+        '<div class="blocked" style="color:var(--warn);margin-top:9px">'+
+          'A key on a phone is a spending credential. Anyone who gets the device can use it, and '+
+          'browser storage is not a vault. Keep it to one key you can kill on its own, watch the '+
+          'usage page, and if the phone goes missing revoke it at '+
+          'console.anthropic.com/settings/keys before anything else.</div>'+
+        '<button class="btn-primary" id="aiSaveBtn" style="margin-top:11px">Save</button>'+
+        '<p class="sub" style="margin-top:11px;line-height:1.55">Answers are generated by a '+
+        'language model reading the same committed JSON you see on screen. It has no live data, '+
+        'no price feed and no memory between companies. It is instructed to source every figure '+
+        'from the dossier and to say so when the data does not contain an answer — but it is a '+
+        'model, so check anything that matters against the filing itself.</p>'+
       '</div></section>';
   }
 
@@ -1156,6 +1280,394 @@
       '</div></section>';
   }
 
+  /* ══ ASK — Claude over the filings ══════════════════
+     The key is entered once in Settings and lives in localStorage on this
+     device. It is never committed, never written into the page source, and the
+     scanner never sees it. GitHub Pages serves this file to anyone, so the only
+     safe place for a credential is the device — the same arrangement as the
+     GitHub token. Requests go from the phone straight to api.anthropic.com,
+     which needs an explicit header to permit a browser origin; that header is
+     Anthropic acknowledging the exposure, not removing it.
+
+     What the model gets is the committed JSON and nothing else. It has no
+     network access, no memory between companies, and no ability to place an
+     order. It reads the same filings-derived figures on screen, which is the
+     point: an answer it cannot source from the dossier is an answer it is
+     required to refuse. */
+  var AKEY='ciel-sleeve-anthropic';
+  var ASK={company:null,log:[],busy:false,ctrl:null};
+
+  function aiKey(){try{return localStorage.getItem(AKEY)||'';}catch(e){return '';}}
+  function aiSaveKey(k){
+    try{k?localStorage.setItem(AKEY,k):localStorage.removeItem(AKEY);}catch(e){}
+  }
+
+  /* A 150-row queue at full fidelity is a third of a megabyte. This is the
+     part that supports "which of these are alike" without shipping the lot. */
+  function queueDigest(){
+    return ((L&&L.companies)||[]).map(function(c){
+      return {rank:c.rank,name:c.name,ticker:c.ticker,slug:c.slug,sector:c.sector,
+        country:c.country,score:c.score,dimensions:c.dimensions,
+        listed_years:c.listed_years,revenue_ttm:c.revenue_ttm,
+        revenue_growth:c.revenue_growth,gross_margin:c.gross_margin,
+        operating_margin:c.operating_margin,runway_months:c.runway_months,
+        cash_flow_positive:c.cash_flow_positive,dilution:c.dilution,
+        flags:c.flags};
+    });
+  }
+
+  var ASK_RULES =
+    'You are the research assistant inside CIEL Sleeve, a terminal Arthur uses for the '+
+    'learning sleeve of his portfolio — at most 10% of it, at most four companies, held for '+
+    'years. He is fourteen, Swiss, thinks in Swiss francs, and is serious about this. Write for '+
+    'someone intelligent who has not yet met the vocabulary. Never talk down to him.\n\n'+
+
+    'GROUNDING — the hard rule.\n'+
+    'Every figure you state must come from the JSON below, which is derived from SEC filings. '+
+    'Quote the number and say which period and which filing it came from. If the JSON does not '+
+    'contain something, say so in one plain sentence and stop — "the dossier has no customer '+
+    'count; that is not in the tagged data" is a complete and correct answer. Do not fill a gap '+
+    'from memory, do not estimate, do not reason from what you recall about the company. Your '+
+    'training data is older than these filings and may be wrong about them.\n\n'+
+
+    'WHAT YOU DO NOT DO.\n'+
+    'You do not forecast returns, name price targets, or say what a share is worth — there is no '+
+    'price anywhere in this data, so any valuation claim would be fabricated. You do not tell him '+
+    'to buy, sell, or hold; that decision is his and the tool has no view on it. You do not '+
+    'describe a company as a good or bad investment. You describe what was filed, what it '+
+    'implies, and what remains unknown. Refuse these requests briefly, without a lecture, and '+
+    'then answer the part you can.\n\n'+
+
+    'HOW TO BE USEFUL.\n'+
+    '1. Depth on one company beats breadth. When he asks about a company, go through what it '+
+    'sells, how the money arrives, what the quarterly series actually shows, who filed as an '+
+    'insider and what they did with their shares, what the events and legal sections say, and '+
+    'where the record is thin.\n'+
+    '2. Explain jargon the moment it appears. Gross margin, dilution, runway, operating cash '+
+    'flow, a 10-Q against a 20-F — define it in one clause and carry on.\n'+
+    '3. When asked to challenge him, be genuinely adversarial. Argue the strongest case against, '+
+    'name the figure that would have to hold for the optimistic reading to be right, and say '+
+    'plainly which one is weakest. Do not soften it and do not balance it back out at the end.\n'+
+    '4. Distinguish a fact from a reading of it. "Revenue grew 41%" is a fact. "That growth is '+
+    'durable" is a reading, and you say so before offering it.\n'+
+    '5. Base rates belong in the answer, not in a disclaimer. Bessembinder (2018) found 57.8% of '+
+    'US listed stocks underperformed one-month Treasury bills over their lifetimes, and the net '+
+    'wealth the market created traces to about 4% of companies. Sharpe (1991) showed the average '+
+    'active investor matches the index before costs and trails it after. These are the odds this '+
+    'sleeve is playing against.\n\n'+
+
+    'WHAT THE DATA CANNOT SEE — say this whenever it bears on the answer.\n'+
+    'No share price, no market capitalisation, no valuation of any kind. SEC filers only, so '+
+    'Swiss, EU and most Asian listings are simply absent. No executive biographies — the team '+
+    'section is Form 3/4/5 ownership, meaning names, titles, holdings and trades, and nothing '+
+    'about anyone\'s history before this company. Officer lists are as of the filing date. '+
+    'Acquisitions leave almost no trace in SEC data.\n\n'+
+
+    'STYLE. Plain British English, short paragraphs, a bullet list where a list helps. No '+
+    'preamble, no summary of the question, no closing pep. Numbers as they appear in the '+
+    'dossier — percentages to one decimal, money in the units given. Do not use headings for a '+
+    'two-paragraph answer.';
+
+  function askContext(){
+    var blocks=[{type:'text',text:ASK_RULES}];
+    var parts=[];
+    if(ASK.company){
+      parts.push('THE COMPANY CURRENTLY OPEN ON SCREEN — the full dossier as committed:\n'+
+        JSON.stringify(ASK.company));
+    }
+    var digest=queueDigest();
+    if(digest.length){
+      parts.push('THE FULL RESEARCH QUEUE — '+digest.length+' companies that survived screening, '+
+        'summary fields only. Use this for comparisons and for questions across the whole list:\n'+
+        JSON.stringify(digest));
+    }
+    if(M){
+      parts.push('SCAN METADATA — cohort, source status and the stated coverage gaps:\n'+
+        JSON.stringify({generated_at:M.generated_at,cohort:M.cohort,counts:M.counts,
+          disqualifications:M.disqualifications,coverage_gaps:M.coverage_gaps}));
+    }
+    if(CHARTER){
+      parts.push('ARTHUR\'S CHARTER — the rules this tool enforces:\n'+JSON.stringify(CHARTER));
+    }
+    if(parts.length){
+      // Cached on the trailing block: the dossier and queue are identical across
+      // every follow-up in a thread, so only the new question is billed at full
+      // rate after the first exchange.
+      blocks.push({type:'text',text:parts.join('\n\n'),cache_control:{type:'ephemeral'}});
+    }
+    return blocks;
+  }
+
+  /* Small deliberately: bold, inline code, bullets, paragraphs. Anything more
+     is a markdown library, and the repo does not take dependencies. */
+  function md(text){
+    var s=esc(text)
+      .replace(/`([^`\n]+)`/g,'<code>$1</code>')
+      .replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');
+    var out='',list=false;
+    s.split('\n').forEach(function(line){
+      var item=line.match(/^\s*(?:[-*•]|\d+\.)\s+(.*)$/);
+      if(item){
+        if(!list){out+='<ul>';list=true;}
+        out+='<li>'+item[1]+'</li>';
+        return;
+      }
+      if(list){out+='</ul>';list=false;}
+      if(line.trim())out+='<p>'+line+'</p>';
+    });
+    if(list)out+='</ul>';
+    return out;
+  }
+
+  function askBody(){return $('#askBody');}
+  function askScroll(){var b=askBody();if(b)b.scrollTop=b.scrollHeight;}
+
+  function askNote(html,cls){
+    var el=document.createElement('div');
+    el.className='msg '+(cls||'ai');
+    el.innerHTML=html;
+    askBody().appendChild(el);askScroll();
+    return el;
+  }
+
+  function askHeader(){
+    var where=$('#askWhere');
+    if(!where)return;
+    where.textContent=ASK.company
+      ? ASK.company.name+(ASK.company.ticker?' · '+ASK.company.ticker:'')
+      : 'the research queue';
+  }
+
+  var CHIPS_COMPANY=[
+    ['Explain the business','Explain what this company actually sells and how the money reaches it, '+
+      'in plain words, using the filing text and the quarterly figures in the dossier.'],
+    ['Argue against it','Make the strongest case against this company that the filings support. '+
+      'Be harsh. Name the single weakest number and say what would have to be true for the '+
+      'optimistic reading to hold.'],
+    ['Read the numbers','Walk me through the quarter-by-quarter table line by line — revenue, '+
+      'growth, margin, operating cash — and tell me which movements matter and which are noise.'],
+    ['Who runs it','What do the ownership filings show about the people running this — names, '+
+      'titles, how much they hold, what they have bought or sold, and what this record cannot '+
+      'tell me about them.'],
+    ['Compare it','How does this company sit against the rest of the queue on growth, margin, '+
+      'runway and dilution? Name the companies it most resembles and where it is the outlier.'],
+    ['What is missing','What would I need to know before deciding, that is not in this dossier '+
+      'at all? Be specific about where the data stops.']
+  ];
+  var CHIPS_QUEUE=[
+    ['How the score works','Explain the five scoring dimensions and what each one is actually '+
+      'measuring, using real examples from the queue.'],
+    ['Find me a shortlist','Which companies in the queue are growing revenue while holding gross '+
+      'margin and not diluting heavily? List them with the figures.'],
+    ['What got eliminated','Explain the disqualification counts — what each reason means and why '+
+      'it is a hard cut rather than a low score.'],
+    ['The odds','Given the base rates, what is realistically likely to happen to four companies '+
+      'picked from a list like this? Do not soften it.'],
+    ['Explain a term','I will name a term from the queue and you define it plainly. Start by '+
+      'listing the five most worth understanding here.']
+  ];
+
+  function renderChips(){
+    var box=$('#askChips');if(!box)return;
+    var set=ASK.company?CHIPS_COMPANY:CHIPS_QUEUE;
+    box.innerHTML=set.map(function(c,i){
+      return '<button type="button" class="askchip" data-i="'+i+'">'+esc(c[0])+'</button>';
+    }).join('');
+  }
+
+  function askReset(){
+    ASK.log=[];
+    var b=askBody();if(!b)return;
+    if(!aiKey()){
+      b.innerHTML='<div class="msg err">No Anthropic API key on this device.</div>'+
+        '<div class="msg ai"><p>Add one in <b>Settings</b> and it stays in this device\'s storage — '+
+        'it is never committed to the repository and never appears in the page source. '+
+        'The site is public; the key is not.</p>'+
+        '<p><a href="#/settings" id="askToSettings">Open settings ↗</a></p></div>';
+      return;
+    }
+    b.innerHTML='<div class="askctx">Reading '+
+      (ASK.company?'the <b>'+esc(ASK.company.name)+'</b> dossier':'the whole <b>research queue</b>')+
+      ' plus the coverage notes and your charter. Answers come from the filings in that data — '+
+      'nothing else.</div>';
+    askScroll();
+  }
+
+  function askOpen(){
+    $('#askSheet').classList.add('on');
+    $('#askScrim').classList.add('on');
+    $('#askFab').setAttribute('aria-expanded','true');
+    askHeader();renderChips();
+    if(!ASK.log.length)askReset();
+    var input=$('#askInput');
+    if(input&&innerWidth>=900)input.focus();
+  }
+  function askClose(){
+    if(ASK.ctrl){try{ASK.ctrl.abort();}catch(e){}ASK.ctrl=null;ASK.busy=false;}
+    $('#askSheet').classList.remove('on');
+    $('#askScrim').classList.remove('on');
+    $('#askFab').setAttribute('aria-expanded','false');
+  }
+
+  function askSetCompany(dossier){
+    var same=ASK.company&&dossier&&ASK.company.slug===dossier.slug;
+    ASK.company=dossier||null;
+    document.body.classList.toggle('has-accept',!!dossier);
+    if(!same){askReset();renderChips();}
+    askHeader();
+  }
+
+  function askSend(question){
+    if(ASK.busy||!question)return;
+    var key=aiKey();
+    if(!key){askReset();return;}
+
+    askNote(esc(question).replace(/\n/g,'<br>'),'me');
+    ASK.log.push({role:'user',content:question});
+
+    var out=askNote('<span class="thinking"><i></i><i></i><i></i></span>','ai');
+    ASK.busy=true;
+    $('#askSend').disabled=true;
+    ASK.ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+
+    var text='',thinking=false,refused=false,painting=false;
+    function paint(){
+      if(painting)return;
+      painting=true;
+      requestAnimationFrame(function(){
+        painting=false;
+        out.innerHTML=text?md(text)
+          :'<span class="thinking"><i></i><i></i><i></i></span>'+
+           (thinking?' <span class="sub">working through the filings…</span>':'');
+        askScroll();
+      });
+    }
+
+    fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      signal:ASK.ctrl?ASK.ctrl.signal:undefined,
+      headers:{
+        'content-type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        // Anthropic blocks browser origins unless this is set. It permits the
+        // request; it does not make holding a key in a browser safe.
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-opus-5',
+        max_tokens:8000,
+        thinking:{type:'adaptive'},
+        output_config:{effort:'high'},
+        system:askContext(),
+        messages:ASK.log.map(function(m){return {role:m.role,content:m.content};}),
+        stream:true
+      })
+    }).then(function(res){
+      if(!res.ok){
+        return res.text().then(function(body){
+          var msg=body;
+          try{msg=JSON.parse(body).error.message;}catch(e){}
+          throw new Error(res.status===401
+            ? 'The key was rejected (401). Check it in Settings.'
+            : (res.status===429
+              ? 'Rate limited (429). Wait a moment and ask again.'
+              : res.status+' — '+msg));
+        });
+      }
+      var reader=res.body.getReader(),dec=new TextDecoder(),buf='';
+      function pump(){
+        return reader.read().then(function(chunk){
+          if(chunk.done)return;
+          buf+=dec.decode(chunk.value,{stream:true});
+          var lines=buf.split('\n');
+          buf=lines.pop();
+          lines.forEach(function(line){
+            if(line.indexOf('data:')!==0)return;
+            var raw=line.slice(5).trim();
+            if(!raw||raw==='[DONE]')return;
+            var ev;try{ev=JSON.parse(raw);}catch(e){return;}
+            if(ev.type==='content_block_start'&&ev.content_block&&
+               ev.content_block.type==='thinking'){thinking=true;paint();}
+            else if(ev.type==='content_block_delta'&&ev.delta){
+              if(ev.delta.type==='text_delta'&&ev.delta.text){text+=ev.delta.text;paint();}
+              else if(ev.delta.type==='thinking_delta'){thinking=true;paint();}
+            }
+            else if(ev.type==='message_delta'&&ev.delta&&ev.delta.stop_reason==='refusal'){
+              refused=true;
+            }
+            else if(ev.type==='error'){
+              throw new Error((ev.error&&ev.error.message)||'stream error');
+            }
+          });
+          return pump();
+        });
+      }
+      return pump();
+    }).then(function(){
+      // A refusal carries no content, so reading the empty block as an answer
+      // would render a blank bubble and look like a bug.
+      if(refused){
+        out.className='msg err';
+        out.innerHTML='Claude declined to answer that one. Rephrase it and try again.';
+      }else if(!text){
+        out.className='msg err';
+        out.innerHTML='Empty response. Ask again.';
+      }else{
+        out.innerHTML=md(text);
+        ASK.log.push({role:'assistant',content:text});
+      }
+      askScroll();
+    }).catch(function(err){
+      if(err&&err.name==='AbortError')return;
+      out.className='msg err';
+      out.innerHTML=esc(err.message||'Request failed.');
+      // Drop the question that never got an answer, so a retry does not send
+      // the same turn twice.
+      ASK.log.pop();
+      askScroll();
+    }).then(function(){
+      ASK.busy=false;ASK.ctrl=null;
+      var send=$('#askSend');if(send)send.disabled=false;
+    });
+  }
+
+  (function bindAsk(){
+    var fab=$('#askFab'),sheet=$('#askSheet'),input=$('#askInput');
+    fab.innerHTML=svg('chat')+'<span>Ask</span>';
+    $('#askIc').innerHTML=svg('chat');
+    $('#askClose').innerHTML=svg('close');
+    $('#askSend').innerHTML=svg('send');
+    fab.addEventListener('click',askOpen);
+    $('#askClose').addEventListener('click',askClose);
+    $('#askScrim').addEventListener('click',askClose);
+    document.addEventListener('keydown',function(e){
+      if(e.key==='Escape'&&sheet.classList.contains('on'))askClose();});
+    $('#askChips').addEventListener('click',function(e){
+      var b=e.target.closest('.askchip');if(!b)return;
+      var set=ASK.company?CHIPS_COMPANY:CHIPS_QUEUE;
+      askSend(set[parseInt(b.getAttribute('data-i'),10)][1]);
+    });
+    $('#askForm').addEventListener('submit',function(e){
+      e.preventDefault();
+      var q=input.value.trim();
+      if(!q)return;
+      input.value='';input.style.height='';
+      askSend(q);
+    });
+    input.addEventListener('input',function(){
+      this.style.height='';this.style.height=Math.min(this.scrollHeight,132)+'px';});
+    // Enter sends on a desktop keyboard; on a phone Enter has to stay a newline
+    // or the on-screen return key becomes unusable.
+    input.addEventListener('keydown',function(e){
+      if(e.key==='Enter'&&!e.shiftKey&&innerWidth>=900){
+        e.preventDefault();$('#askForm').dispatchEvent(new Event('submit',{cancelable:true}));
+      }
+    });
+    askBody().addEventListener('click',function(e){
+      if(e.target.closest('#askToSettings'))askClose();});
+  })();
+
   /* ── ROUTER ─────────────────────────────────────────── */
   function route(){
     var hash=location.hash||'#/';
@@ -1167,6 +1679,11 @@
         flushPending();
         this.textContent='Saved';
       });
+      $('#aiSaveBtn').addEventListener('click',function(){
+        aiSaveKey($('#aiKey').value.trim());
+        askReset();
+        this.textContent='Saved';
+      });
       hydrate();window.scrollTo(0,0);return;
     }
     if(hash.indexOf('#/c/')===0){
@@ -1176,11 +1693,12 @@
             encodeURIComponent((M&&M.generated_at)||''))
         .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
         .then(function(d){view.innerHTML=renderDossier(d);bindDossier(d);hydrate();
-          window.scrollTo(0,0);})
+          askSetCompany(d);window.scrollTo(0,0);})
         .catch(function(err){view.innerHTML='<div class="empty"><b>Could not load that dossier.</b>'+
           'data/sleeve/companies/'+esc(slug)+'.json — '+esc(err.message)+'</div>';});
       return;
     }
+    askSetCompany(null);
     if(hash==='#/review'){view.innerHTML=renderReview();hydrate();window.scrollTo(0,0);return;}
     view.innerHTML=charterBand()+renderQueue()+baseRateSection()+renderCoverage();
     var sb=$('#stripBtn');
@@ -1249,6 +1767,7 @@
       'It reads its data with fetch(), which browsers block on file:// URLs.'+
       '<code>python3 -m http.server 8000</code><br><span style="font-size:11px">'+
       'then open http://localhost:8000/sleeve.html</span></div>';
+    $('#askFab').style.display='none';
     return;
   }
 
