@@ -60,8 +60,13 @@ def write_json(path, payload, budget=None):
         with open(path, "r", encoding="utf-8") as handle:
             if handle.read() == text:
                 return size, False
-    with open(path, "w", encoding="utf-8") as handle:
+    # Written through a temporary file and renamed: this output is committed to
+    # git, and a run interrupted mid-write would otherwise leave truncated JSON
+    # in the tree for the site to choke on.
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as handle:
         handle.write(text)
+    os.replace(tmp, path)
     return size, True
 
 
@@ -162,7 +167,7 @@ def company_dossier(company):
         # the corporate story, the quarter-by-quarter table, material events and
         # legal exposure.
         "narrative": company.narrative or {},
-        "story": company.story[-24:],
+        "story": _trim_story(company.story, 24),
         "quarterly": company.quarterly,
         "events": company.events[:24],
         "legal_events": company.legal,
@@ -185,9 +190,27 @@ def company_dossier(company):
     }
 
 
+def _trim_story(story, limit):
+    """Keep the listing and funding events, then fill with the most recent.
+
+    Slicing the tail keeps the newest entries and throws away the IPO, which is
+    the one event a funding story cannot be missing - JFrog's dossier lost its
+    2020 S-1 and prospectus that way while keeping four routine proxy filings.
+    """
+    if len(story) <= limit:
+        return story
+    anchors = [e for e in story if e["kind"] in ("listing", "funding")]
+    keep = {id(e) for e in anchors[:limit]}
+    for entry in reversed(story):
+        if len(keep) >= limit:
+            break
+        keep.add(id(entry))
+    return [e for e in story if id(e) in keep]
+
+
 def trim_dossier(dossier):
     """Drop the least informative content until the record fits its budget."""
-    dossier["story"] = dossier.get("story", [])[-10:]
+    dossier["story"] = _trim_story(dossier.get("story", []), 10)
     dossier["events"] = dossier.get("events", [])[:10]
     dossier["quarterly"] = dossier.get("quarterly", [])[:6]
     narrative = dossier.get("narrative") or {}
