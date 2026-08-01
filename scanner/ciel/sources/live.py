@@ -96,6 +96,41 @@ def policy(session, limit=12, log=print):
     return out
 
 
+def coverage(session, name, window=8, log=print):
+    """Volume and average tone of recent coverage for one company.
+
+    GDELT scores each article's tone roughly between -10 and +10. It is a crude
+    machine reading of language, not a judgement about a business, and it is
+    used here only to flag sustained hostility - never to reward attention.
+    Volume deliberately earns nothing: Barber and Odean (2008) found individual
+    investors buy attention-grabbing stocks and underperform for it, so ranking
+    companies up for being in the news would import a known mistake.
+    """
+    if not name:
+        return None
+    query = '"%s"' % re.sub(r'["\\]', "", name)
+    url = (GDELT % (query.replace(" ", "%20").replace('"', "%22"), window)) + "&sort=datedesc"
+    try:
+        articles = json.loads(session.get(url, ttl=6 * 3600)).get("articles", [])
+    except Exception as exc:  # noqa: BLE001 - news must never fail a scan
+        log("  coverage %s failed: %s" % (name, exc))
+        return None
+    tones = []
+    for article in articles:
+        try:
+            tones.append(float(article.get("tone")))
+        except (TypeError, ValueError):
+            continue
+    if not articles:
+        return {"volume": 0, "tone": None, "sample": []}
+    return {
+        "volume": len(articles),
+        "tone": round(sum(tones) / len(tones), 2) if tones else None,
+        "sample": [{"title": a.get("title", ""), "source": a.get("domain", ""),
+                    "url": a.get("url", "")} for a in articles[:4] if a.get("title")],
+    }
+
+
 def news_for(session, holdings, per_company=4, log=print):
     """Recent coverage of what is actually held. Never the whole queue.
 
