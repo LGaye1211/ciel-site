@@ -140,6 +140,46 @@ class TestDisqualifiers(unittest.TestCase):
         ids = [r["id"] for r in disqualify.check(c, self.rubric, self.universe)]
         self.assertIn("dilution_over_25pct", ids)
 
+    def test_stale_data_eliminates(self):
+        """Found in a live run: TransMedics files on time, but its tagged series
+        stops at Q3 2022, so the tool reported +349% growth from four-year-old
+        figures as though it were current."""
+        c = healthy_company()
+        c.metrics["data_age_months"] = 44
+        c.metrics["data_latest_period"] = "Q3 2022"
+        reasons = disqualify.check(c, self.rubric, self.universe)
+        ids = [r["id"] for r in reasons]
+        self.assertIn("stale_data", ids)
+        detail = [r["detail"] for r in reasons if r["id"] == "stale_data"][0]
+        self.assertIn("Q3 2022", detail, "the reason must name the period it stopped at")
+
+    def test_recent_data_survives(self):
+        c = healthy_company()
+        c.metrics["data_age_months"] = 4
+        self.assertEqual(disqualify.check(c, self.rubric, self.universe), [])
+
+    def test_annual_filers_get_a_longer_window(self):
+        c = healthy_company()
+        c.annual_only = True
+        c.metrics["data_age_months"] = 14
+        c.metrics["data_latest_period"] = "2025"
+        ids = [r["id"] for r in disqualify.check(c, self.rubric, self.universe)]
+        self.assertNotIn("stale_data", ids,
+                         "a 20-F filer reporting annually is not stale at 14 months")
+
+    def test_gapped_series_eliminates(self):
+        c = healthy_company()
+        c.metrics["series_density"] = 0.35
+        ids = [r["id"] for r in disqualify.check(c, self.rubric, self.universe)]
+        self.assertIn("gapped_series", ids)
+
+    def test_nanocap_revenue_floor(self):
+        c = healthy_company()
+        c.metrics["revenue_ttm"] = 4_480_379.0
+        ids = [r["id"] for r in disqualify.check(c, self.rubric, self.universe)]
+        self.assertIn("no_revenue", ids,
+                      "sub-$10m revenue is a nanocap, too thin to enter or leave")
+
     def test_going_concern_eliminates(self):
         c = healthy_company()
         c.metrics["going_concern"] = True

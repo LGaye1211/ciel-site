@@ -7,6 +7,7 @@ what actually kill a small holding and rarely appear in headline coverage.
 Every figure keeps the accession it came from so the UI can link to the filing.
 """
 
+import datetime
 import re
 
 from ..model import Point, Series
@@ -313,6 +314,27 @@ def derive_metrics(series):
             m["dilution_yoy"] = (now.val - before.val) / before.val
             m["dilution_basis"] = "%s vs %s" % (now.label, before.label)
             m["shares_now"] = now.val
+
+    # How old the newest reported figure actually is. A company can be filing
+    # on time while its XBRL series stops years earlier - usually because it
+    # changed tags and SEC stopped assigning calendar frames to the new one.
+    # Without this the tool will happily present four-year-old growth as
+    # current, which is worse than showing nothing.
+    if rev and rev.points:
+        cal = rev.points[-1].calendar
+        if cal:
+            year, quarter = cal
+            end_month = quarter * 3 if quarter else 12
+            today = datetime.date.today()
+            m["data_age_months"] = ((today.year - year) * 12 + (today.month - end_month))
+            m["data_latest_period"] = rev.points[-1].label
+
+        # Continuity: a gapped series is not the same as a short one, and a
+        # growth rate computed across a hole is not a growth rate.
+        cals = [p.calendar for p in rev.points if p.calendar]
+        if len(cals) >= 2:
+            span = (cals[-1][0] - cals[0][0]) * 4 + (cals[-1][1] - cals[0][1])
+            m["series_density"] = len(cals) / float(span + 1) if span >= 0 else 1.0
 
     present = sum(1 for key in (
         "revenue_latest", "gross_margin", "operating_margin", "ocf_ttm",

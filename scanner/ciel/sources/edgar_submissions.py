@@ -42,11 +42,16 @@ def fetch_company(session, cik, fallback_name=""):
     # here - treat it as an established filer rather than guessing.
     has_older = bool(payload.get("filings", {}).get("files"))
 
+    # SEC returns null entries in these arrays for securities with no listed
+    # exchange, so they cannot be joined without filtering first.
+    def clean(values):
+        return [str(v) for v in (values or []) if v]
+
     company = Company(
         cik=str(int(cik10)),
         name=payload.get("name") or fallback_name,
-        tickers=payload.get("tickers") or [],
-        exchanges=payload.get("exchanges") or [],
+        tickers=clean(payload.get("tickers")),
+        exchanges=clean(payload.get("exchanges")),
         sic=str(payload.get("sic") or ""),
         sic_description=payload.get("sicDescription") or "",
         state=payload.get("stateOfIncorporationDescription") or "",
@@ -60,9 +65,10 @@ def fetch_company(session, cik, fallback_name=""):
     company.slug = make_slug(company.name, company.cik)
     company.country = _country(payload)
 
+    docs = recent.get("primaryDocument", []) or []
     company.recent_filings = [
-        {"form": f, "date": d, "accession": a}
-        for f, d, a in zip(forms, dates, accns)
+        {"form": f, "date": d, "accession": a, "primary_document": p}
+        for f, d, a, p in zip(forms, dates, accns, docs)
     ][:400]
     company.entity_category = (payload.get("category") or "").lower()
     company.description = payload.get("description") or ""

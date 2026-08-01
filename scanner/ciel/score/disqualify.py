@@ -65,6 +65,27 @@ def check(company, rubric, universe):
              "No filing within %d days - the data cannot be relied on."
              % universe.get("max_days_since_last_filing", 400))
 
+    # A company can be filing on time while its XBRL series stopped years ago,
+    # usually after a tag change SEC never assigned calendar frames to. Showing
+    # four-year-old growth as current is worse than showing nothing.
+    age = m.get("data_age_months")
+    max_age = universe.get("max_data_age_months", 9)
+    if getattr(company, "annual_only", False):
+        max_age = universe.get("max_data_age_months_annual", 20)
+    if age is None:
+        fail("stale_data", "No dated financial figures could be read.")
+    elif age > max_age:
+        fail("stale_data",
+             "The newest reported figure is %s, about %d months old. The company may still be "
+             "filing, but its tagged data stops there, so nothing here reflects how it trades "
+             "today." % (m.get("data_latest_period", "unknown"), age))
+
+    density = m.get("series_density")
+    if density is not None and density < universe.get("min_series_density", 0.6):
+        fail("gapped_series",
+             "The reported series covers only %d%% of the quarters it spans. Growth measured "
+             "across the holes is not growth." % round(density * 100))
+
     if m.get("going_concern"):
         fail("going_concern",
              "The filing discloses substantial doubt about the company's ability to continue "

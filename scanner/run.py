@@ -25,10 +25,15 @@ from ciel.emit import build as emit                          # noqa: E402
 from ciel.http import Session                                # noqa: E402
 from ciel.score import bearcase, disqualify, engine, thesis, triggers  # noqa: E402
 from ciel.sources import edgar_submissions as subs           # noqa: E402
-from ciel.sources import xbrl_facts, xbrl_frames             # noqa: E402
+from ciel.sources import ownership, xbrl_facts, xbrl_frames  # noqa: E402
 
 DATA_DIR = os.path.join(ROOT, "data", "sleeve")
 CONFIG_DIR = os.path.join(HERE, "config")
+
+# Company facts run about a megabyte each, so an unbounded cache passes a
+# gigabyte in one deep scan. actions/cache has to round-trip that on every CI
+# run, which costs more time than the requests it saves.
+CACHE_BUDGET_BYTES = 600 * 1024 * 1024
 
 
 def load_config(name):
@@ -75,6 +80,8 @@ def main():
     parser.add_argument("--offline", action="store_true", help="replay from cache only")
     parser.add_argument("--no-cache", action="store_true")
     parser.add_argument("--check-budgets", action="store_true")
+    parser.add_argument("--no-team", action="store_true",
+                        help="skip Form 4 ownership (much faster iteration)")
     args = parser.parse_args()
 
     universe = load_config("universe.json")
@@ -93,10 +100,6 @@ def main():
     ceiling = universe["max_total_assets_usd"]
     candidates = [r for r in pool.values()
                   if not r.get("assets_hint") or r["assets_hint"] <= ceiling]
-    # Deterministic order by CIK. Sorting by revenue would bias the whole scan
-    # toward the largest filers, which is the opposite of what a search for
-    # young listed companies wants - and with a --limit it would silently make
-    # the sample a mega-cap sample.
     # Newest CIK first. CIKs are issued in registration order, so this is a
     # strong recency prior and it costs nothing - scanning oldest-first spends
     # thousands of requests on companies that cannot pass the age filter.
@@ -106,6 +109,8 @@ def main():
     log("after size ceiling: %d candidates" % len(candidates))
 
     today = datetime.date.today()
+    # Insider activity over the trailing four quarters.
+    ownership_since = (today - datetime.timedelta(days=400)).isoformat()
     cap = args.limit or universe["max_companies_to_enrich"]
 
     # Stage 1: listing age. One cached request each, and it is the filter that
@@ -136,7 +141,7 @@ def main():
     log("listed within %d years: %d companies"
         % (universe["max_years_since_first_annual"], len(young)))
 
-    survivors, disqualified, dq_counts = [], [], {}
+    survivors, disqualified, dq_counts, skipped = [], [], {}, []
 
     # Stage 2: financials, only for companies that passed the age filter.
     for company in young:
@@ -159,10 +164,31 @@ def main():
             disqualified.append(company)
             continue
 
-        engine.evaluate(company, rubric)
-        company.thesis = thesis.build(company)
-        company.thesis["bear"] = bearcase.build(company)
-        company.triggers = triggers.build(company)
+        # Team: officers, holdings and selling from Form 3/4/5. There is no
+        # free structured source for executive biographies, so this is what can
+        # be established honestly - and insider selling is the signal most
+        # commentary ignores.
+        if not args.no_team:
+            try:
+                team, own = ownership.fetch_insiders(
+                    session, company, max_filings=universe["ownership_filings_per_company"],
+                    since=ownership_since)
+                company.team = team
+                company.metrics.update(own)
+            except Exception as exc:  # noqa: BLE001
+                log("ownership failed for %s: %s" % (company.name, exc))
+
+        # One malformed record must not cost a ten-minute scan. Skip it, count
+        # it, and let the run finish.
+        try:
+            engine.evaluate(company, rubric)
+            company.thesis = thesis.build(company)
+            company.thesis["bear"] = bearcase.build(company)
+            company.triggers = triggers.build(company)
+        except Exception as exc:  # noqa: BLE001
+            log("scoring failed for %s (%s): %s" % (company.name, company.cik, exc))
+            skipped.append((company.name, str(exc)))
+            continue
         survivors.append(company)
 
         if (len(survivors) + len(disqualified)) % 100 == 0:
@@ -170,7 +196,9 @@ def main():
                 % (len(survivors), len(disqualified)))
 
     ordered = engine.rank(survivors)
-    log("scored %d survivors, eliminated %d" % (len(ordered), len(disqualified)))
+    log("scored %d survivors, eliminated %d%s"
+        % (len(ordered), len(disqualified),
+           ", %d skipped on error" % len(skipped) if skipped else ""))
 
     if args.mode == "dry":
         for company in ordered[:15]:
@@ -252,6 +280,11 @@ def main():
                       rubric.get("rubric_version", ""), generated_at,
                       int(time.time()), dq_counts),
         emit.BUDGETS["manifest.json"])
+
+    if hasattr(cache, "prune"):
+        freed, kept = cache.prune(CACHE_BUDGET_BYTES)
+        if freed:
+            log("cache pruned: freed %.0fMB, kept %.0fMB" % (freed / 1e6, kept / 1e6))
 
     log("done in %.1fs - %d requests, %d cache hits"
         % (time.time() - started, session.stats["requests"], session.stats["cache_hits"]))

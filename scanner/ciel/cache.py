@@ -43,6 +43,40 @@ class Cache:
         except OSError:
             pass
 
+    def prune(self, max_bytes):
+        """Drop the least recently used entries down to a size budget.
+
+        Company facts run to about a megabyte each, so an unbounded cache
+        reaches a gigabyte in a single deep scan. That still works, but
+        actions/cache has to save and restore it on every CI run, and a
+        multi-gigabyte round trip costs more time than the requests it saves.
+        """
+        entries = []
+        total = 0
+        for root, _dirs, files in os.walk(self.root):
+            for name in files:
+                path = os.path.join(root, name)
+                try:
+                    stat = os.stat(path)
+                except OSError:
+                    continue
+                entries.append((stat.st_mtime, stat.st_size, path))
+                total += stat.st_size
+        if total <= max_bytes:
+            return 0, total
+
+        entries.sort()  # oldest first
+        freed = 0
+        for _mtime, size, path in entries:
+            if total - freed <= max_bytes:
+                break
+            try:
+                os.remove(path)
+                freed += size
+            except OSError:
+                continue
+        return freed, total - freed
+
 
 class NullCache:
     def get(self, url, ttl=None):

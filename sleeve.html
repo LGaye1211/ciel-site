@@ -6,6 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>CIEL — Learning Sleeve</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070d18'/%3E%3Cpath d='M6 24 L24 8' stroke='%23cbb078' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='24' cy='8' r='3.2' fill='%23cbb078'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -274,16 +275,18 @@
   /* ── BREAKPOINTS ───────────────────────────────────── */
   @media(min-width:760px){
     .wrap,.hrow,.pills,.standing{padding-left:20px;padding-right:20px}
-    .charter{grid-template-columns:1.4fr 1fr}
-    .cases{grid-template-columns:1fr 1fr}
-    .qrow{grid-template-columns:34px 1fr 150px auto}
-    .dims{grid-column:auto;margin-top:0}
+    .charter{grid-template-columns:1.4fr 1fr;align-items:start}
+    .cases{grid-template-columns:1fr 1fr;align-items:start}
+    .qrow{grid-template-columns:34px minmax(180px,1fr) 96px 150px 64px}
+    .dims{grid-column:auto;margin-top:0;gap:3px}
+    .dims i{height:18px;border-radius:3px}
     .qspark{grid-column:auto;margin-top:0}
-    .qflags{grid-column:2/-1}
+    .qflags{grid-column:2/-1;margin-top:4px}
     .dhead h1{font-size:26px}
   }
   @media(min-width:1180px){
     .charter{grid-template-columns:1.5fr 1fr 1fr}
+    .qrow{grid-template-columns:38px minmax(240px,1fr) 120px 190px 72px}
   }
 
   @media print{
@@ -304,6 +307,7 @@
     <div class="brand">CIEL <span>· SLEEVE</span></div>
     <div class="hspace"></div>
     <button class="iconbtn" id="reviewBtn" title="Reviews" aria-label="Reviews"></button>
+    <button class="iconbtn" id="setBtn" title="Settings" aria-label="Settings"></button>
     <button class="iconbtn" id="themeBtn" title="Theme" aria-label="Toggle theme"></button>
   </div>
   <div class="pills" id="pills"></div>
@@ -364,11 +368,74 @@
   function num(v,d){return v==null||isNaN(v)?'—':v.toFixed(d==null?0:d);}
 
   /* ── STATE ──────────────────────────────────────────── */
-  var M=null, L=null, POS=null;
-  var PKEY='ciel-sleeve-positions';
+  var M=null, L=null, POS=null, CHARTER=null, COSTS=null;
+  var PKEY='ciel-sleeve-positions', QKEY='ciel-sleeve-queue', GKEY='ciel-sleeve-gh';
   function loadPos(){try{return JSON.parse(localStorage.getItem(PKEY)||'{}');}catch(e){return {};}}
   function savePos(){try{localStorage.setItem(PKEY,JSON.stringify(POS));}catch(e){}}
   POS=loadPos();
+
+  /* ── GITHUB WRITE-BACK ──────────────────────────────
+     Every accept becomes a commit, so the record is versioned, timestamped by
+     git, readable from any device and survives a wiped phone. The token is
+     fine-grained and scoped to contents:write on this one repository — that is
+     the entire blast radius if the device is lost. */
+  function ghConfig(){try{return JSON.parse(localStorage.getItem(GKEY)||'null');}catch(e){return null;}}
+  function ghSave(c){try{localStorage.setItem(GKEY,JSON.stringify(c));}catch(e){}}
+
+  function b64(str){
+    return btoa(String.fromCharCode.apply(null,new TextEncoder().encode(str)));
+  }
+  function ghPut(path,payload,message){
+    var cfg=ghConfig();
+    if(!cfg||!cfg.token||!cfg.repo)return Promise.resolve({skipped:true});
+    var api='https://api.github.com/repos/'+cfg.repo+'/contents/'+path;
+    var hdr={'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'};
+    // Read the current blob sha first so a concurrent edit 409s instead of
+    // being silently clobbered.
+    return fetch(api,{headers:hdr})
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(existing){
+        var body={message:message,content:b64(JSON.stringify(payload,null,2))};
+        if(existing&&existing.sha)body.sha=existing.sha;
+        return fetch(api,{method:'PUT',headers:hdr,body:JSON.stringify(body)});
+      })
+      .then(function(r){
+        if(r.status===409)return {conflict:true};
+        if(!r.ok)return r.json().then(function(e){throw new Error(e.message||r.status);});
+        return {ok:true};
+      });
+  }
+  function queuePending(item){
+    var q;try{q=JSON.parse(localStorage.getItem(QKEY)||'[]');}catch(e){q=[];}
+    q.push(item);try{localStorage.setItem(QKEY,JSON.stringify(q));}catch(e){}
+  }
+  function pendingCount(){
+    try{return JSON.parse(localStorage.getItem(QKEY)||'[]').length;}catch(e){return 0;}
+  }
+  function flushPending(){
+    var q;try{q=JSON.parse(localStorage.getItem(QKEY)||'[]');}catch(e){return;}
+    if(!q.length||!ghConfig())return;
+    var next=q.shift();
+    ghPut(next.path,next.payload,next.message).then(function(res){
+      if(res&&(res.ok||res.skipped)){
+        try{localStorage.setItem(QKEY,JSON.stringify(q));}catch(e){}
+        if(q.length)flushPending();
+      }
+    }).catch(function(){});
+  }
+
+  /* ── COST GATE (dossier 4.3 / 4.4) ──────────────────── */
+  function orderCost(amountChf,foreign){
+    var c=COSTS||{stamp_duty_swiss:0.00075,stamp_duty_foreign:0.0015,
+      brokerage_flat_chf:9,fx_spread_pct:0.005,max_total_cost_pct:0.005,min_order_chf:500};
+    var stamp=amountChf*(foreign?c.stamp_duty_foreign:c.stamp_duty_swiss);
+    var fx=foreign?amountChf*c.fx_spread_pct:0;
+    var total=stamp+fx+c.brokerage_flat_chf;
+    return {total:total,pct:total/amountChf,limit:c.max_total_cost_pct,
+            // Smallest order where flat brokerage stops dominating the ratio.
+            minClearing:Math.ceil(c.brokerage_flat_chf/
+              (c.max_total_cost_pct-(foreign?c.stamp_duty_foreign+c.fx_spread_pct:c.stamp_duty_swiss))/50)*50};
+  }
 
   /* ── THEME ──────────────────────────────────────────── */
   var TKEY='ciel-sleeve-theme',root=document.documentElement,tbtn=$('#themeBtn');
@@ -384,6 +451,8 @@
     try{localStorage.setItem(TKEY,n);}catch(e){} setTheme(n);});
   $('#reviewBtn').innerHTML=svg('book');
   $('#reviewBtn').addEventListener('click',function(){location.hash='#/review';});
+  $('#setBtn').innerHTML=svg('shield');
+  $('#setBtn').addEventListener('click',function(){location.hash='#/settings';});
 
   /* ── TOOLTIP ────────────────────────────────────────── */
   var tip=$('#tip');
@@ -566,13 +635,16 @@
     else if(c.runway_months!=null)meta.push('<span style="color:'+
       (c.runway_months<24?'var(--warn)':'var(--muted)')+'">'+num(c.runway_months)+'mo runway</span>');
     var flags=(c.flags||[]).map(function(f){return '<span class="flag">'+esc(f)+'</span>';}).join('');
+    // DOM order matters: on desktop these six children flow into a five-column
+    // grid, so dims must sit between the name and the sparkline or it lands in
+    // the 34px rank column and renders as unreadable dots.
     return '<button class="qrow reveal" data-slug="'+esc(c.slug)+'">'+
       '<div class="qrank tnum">'+c.rank+'</div>'+
       '<div><div class="qname">'+esc(c.name)+'</div><div class="qmeta">'+meta.join('<span>·</span>')+'</div></div>'+
+      '<div class="dims">'+dims+'</div>'+
       '<svg class="spark qspark" data-spark="'+(c.spark_revenue||[]).join(',')+'" data-color="blue" '+
         'style="width:100%;height:28px" aria-label="Revenue trend"></svg>'+
       '<div class="qscore"><b class="tnum">'+num(c.score,1)+'</b><span>PRIORITY</span></div>'+
-      '<div class="dims">'+dims+'</div>'+
       (flags?'<div class="qflags">'+flags+'</div>':'')+
     '</button>';
   }
@@ -678,14 +750,35 @@
        '</div></section>';
 
     if(d.team&&d.team.length){
+      var m=d.metrics||{};
+      var own=m.insider_ownership,sell=m.insider_selling;
       h+='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('users')+'</span>'+
-        '<div><h2>The team</h2><p>Reconstructed from filings</p></div><div class="line"></div></div>'+
-        '<div class="card reveal">'+d.team.map(function(p){
-          return '<div style="padding:9px 0;border-top:1px solid var(--border)">'+
-            '<b style="font-size:12px">'+esc(p.raw_name||'')+'</b> '+
-            '<span class="sub">'+esc(p.title_filed||'')+'</span></div>';
-        }).join('')+'<p class="sub" style="margin-top:9px;line-height:1.55">'+
-        esc(d.team_note||'')+'</p></div></section>';
+        '<div><h2>The team</h2><p>Named in their own ownership filings</p></div><div class="line"></div></div>'+
+        '<div class="card reveal">'+
+        '<div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:11px">'+
+          '<div><b class="tnum" style="font-size:17px;color:'+
+            (own>=0.05?'var(--good)':'var(--muted)')+'">'+pct(own)+'</b>'+
+            '<div class="sub">held by insiders</div></div>'+
+          '<div><b class="tnum" style="font-size:17px;color:'+
+            (sell>0.10?'var(--crit)':(sell>0.03?'var(--warn)':'var(--good)'))+'">'+pct(sell)+'</b>'+
+            '<div class="sub">sold in 4 quarters</div></div>'+
+          '<div><b class="tnum" style="font-size:17px">'+(m.insider_filings_read||0)+'</b>'+
+            '<div class="sub">filings read</div></div>'+
+        '</div>'+
+        d.team.map(function(p){
+          var sold=p.sold_in_window||0,bought=p.bought_in_window||0;
+          var tag=bought>sold?'<span style="color:var(--good)">bought</span>':
+                  (sold>0?'<span style="color:var(--crit)">sold '+
+                    Math.round(sold).toLocaleString()+'</span>':'<span class="sub">no trades</span>');
+          return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;'+
+            'padding:8px 0;border-top:1px solid var(--border)">'+
+            '<div style="min-width:0"><b style="font-size:12px">'+esc(p.raw_name||'')+'</b>'+
+            '<div class="sub" style="margin-top:1px">'+esc(p.title_filed||p.role||'')+'</div></div>'+
+            '<div style="text-align:right;white-space:nowrap;font-size:10.5px">'+
+            (p.shares?'<span class="mono tnum">'+Math.round(p.shares).toLocaleString()+'</span> sh<br>':'')+
+            tag+'</div></div>';
+        }).join('')+
+        '<p class="sub" style="margin-top:11px;line-height:1.55">'+esc(d.team_note||'')+'</p></div></section>';
     }else{
       h+='<section class="zone"><div class="card reveal" style="border-left:3px solid var(--warn)">'+
         '<h3>No team history available</h3><p class="sub" style="line-height:1.6">'+
@@ -707,7 +800,35 @@
     return h;
   }
 
-  /* ── REVIEW ─────────────────────────────────────────── */
+  /* ── REVIEW ─────────────────────────────────────────
+     Pre-computed from what was stored at accept time against what the latest
+     scan reports. Nothing to type. */
+  function livePosition(slug){
+    return ((L&&L.companies)||[]).filter(function(c){return c.slug===slug;})[0]||null;
+  }
+  function checkTriggers(pos){
+    var live=livePosition(pos.slug);
+    if(!live)return {fired:[],near:[],stale:true};
+    // Map the queue row back onto the metric names the triggers reference.
+    var now={gross_margin:live.gross_margin,revenue_growth_yoy:live.revenue_growth,
+      dilution_yoy:live.dilution,runway_months:live.cash_flow_positive?999:live.runway_months};
+    var fired=[],near=[];
+    (pos.triggers||[]).forEach(function(t){
+      var v=now[t.metric];
+      if(v==null||t.comparison==='is_true')return;
+      var hit=t.comparison==='below'?v<t.threshold:v>t.threshold;
+      var margin=t.threshold?Math.abs(v-t.threshold)/Math.abs(t.threshold):1;
+      if(hit)fired.push({t:t,v:v});
+      else if(margin<0.2)near.push({t:t,v:v,margin:margin});
+    });
+    return {fired:fired,near:near,stale:false,live:live};
+  }
+  function fmtMetric(metric,v){
+    if(v==null)return '—';
+    if(metric==='runway_months')return num(v)+' months';
+    return pct(v);
+  }
+
   function renderReview(){
     var held=Object.keys(POS);
     var h='<a class="back" href="#/">'+svg('go')+' Research queue</a>';
@@ -719,14 +840,59 @@
         'sell trigger is to firing, and — annually — the sleeve against the core with costs included, '+
         'plus what the app argued at the time against what actually happened.</p></div>';
     }else{
-      h+='<div class="card reveal">'+held.map(function(s){
-        var p=POS[s];
-        return '<div style="padding:10px 0;border-top:1px solid var(--border)">'+
-          '<b style="font-size:12.5px">'+esc(p.name||s)+'</b>'+
-          '<div class="sub" style="margin-top:3px">accepted '+esc((p.accepted_at||'').slice(0,10))+
-          ' · confidence '+esc(p.confidence||'—')+'/5 · '+((p.triggers||[]).length)+' triggers armed</div>'+
-          '</div>';
-      }).join('')+'</div>';
+      held.forEach(function(s){
+        var p=POS[s],state=checkTriggers(p);
+        var days=Math.floor((Date.now()-Date.parse(p.accepted_at||''))/86400000);
+        h+='<div class="card reveal" style="margin-bottom:10px'+
+          (state.fired.length?';border-left:3px solid var(--crit)':'')+'">'+
+          '<h3>'+esc(p.name||s)+(p.ticker?' <span class="mono sub">'+esc(p.ticker)+'</span>':'')+'</h3>'+
+          '<div class="sub">accepted '+esc((p.accepted_at||'').slice(0,10))+
+          ' at confidence '+esc(p.confidence||'—')+'/5 · '+(isNaN(days)?'':days+' days held')+
+          ' · '+((p.triggers||[]).length)+' triggers armed</div>';
+
+        if(state.stale){
+          h+='<p class="sub" style="margin-top:9px;color:var(--warn)">Not in the latest scan — it may '+
+             'have dropped out of the universe. Triggers cannot be checked.</p>';
+        }else if(state.fired.length){
+          h+='<div style="margin-top:10px">'+state.fired.map(function(f){
+            return '<div class="trig fired" style="margin-bottom:6px">'+
+              '<div class="trig-lab">'+esc(f.t.label)+' <span class="flag">FIRED</span></div>'+
+              '<div class="trig-now" style="margin-top:4px">now '+esc(fmtMetric(f.t.metric,f.v))+
+              ' · you set '+esc(f.t.threshold_display||'')+'</div></div>';
+          }).join('')+
+          '<p class="sub" style="line-height:1.55">This is what you said you would sell on, on '+
+          esc((p.accepted_at||'').slice(0,10))+'. It is not a recommendation and the tool has no view '+
+          'on what you do next.</p></div>';
+        }else if(state.near.length){
+          h+='<div style="margin-top:10px">'+state.near.map(function(n){
+            return '<div class="trig" style="margin-bottom:6px;border-color:var(--warn)">'+
+              '<div class="trig-lab">'+esc(n.t.label)+'</div>'+
+              '<div class="trig-now" style="margin-top:4px">now '+esc(fmtMetric(n.t.metric,n.v))+
+              ' — within '+pct(n.margin,0)+' of the line</div></div>';
+          }).join('')+'</div>';
+        }else{
+          h+='<p class="sub" style="margin-top:9px;color:var(--good)">No trigger near firing.</p>';
+        }
+
+        // Calibration replay — Appendix B's retrospective, reconstructed.
+        if(days>=365&&state.live){
+          var drift=(state.live.score!=null&&p.accepted_score!=null)
+            ? state.live.score-p.accepted_score : null;
+          h+='<div style="margin-top:11px;padding-top:10px;border-top:1px solid var(--border)">'+
+            '<b style="font-size:11.5px">A year on — what had I got wrong?</b>'+
+            '<div class="sub" style="margin-top:5px;line-height:1.6">'+
+            'You set confidence '+esc(p.confidence)+'/5. Priority score has moved '+
+            (drift==null?'—':(drift>=0?'+':'')+num(drift,1))+' points since. '+
+            'What the app argued then is below; compare it against the current filings yourself — '+
+            'that comparison is the whole point of the exercise.</div>'+
+            '<details style="margin-top:7px"><summary class="sub" style="cursor:pointer">'+
+            'What it argued at the time</summary>'+
+            '<ul class="gaps" style="margin-top:6px">'+
+            (p.argued_for||[]).concat(p.argued_against||[]).slice(0,8).map(function(t){
+              return '<li>'+esc(t)+'</li>';}).join('')+'</ul></details></div>';
+        }
+        h+='</div>';
+      });
     }
     h+='<div class="card reveal" style="margin-top:10px"><h3>Appendix A — the annual questions</h3>'+
       '<ul class="gaps">'+
@@ -753,10 +919,63 @@
       '</ul><p class="sub" style="margin-top:11px;line-height:1.55">'+esc(M.disclaimer||'')+'</p></div></section>';
   }
 
+  /* ── SETTINGS ───────────────────────────────────────── */
+  function renderSettings(){
+    var cfg=ghConfig()||{};
+    return '<a class="back" href="#/">'+svg('go')+' Research queue</a>'+
+      '<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('shield')+'</span>'+
+      '<div><h2>Settings</h2><p>Where your decisions are kept</p></div><div class="line"></div></div>'+
+      '<div class="card reveal">'+
+        '<h3>Save decisions to the repository</h3>'+
+        '<p class="sub" style="line-height:1.6;margin-bottom:11px">Every accept becomes a commit under '+
+        '<code>charter/positions/</code>. Versioned, timestamped by git, readable from any device, and it '+
+        'survives a wiped phone — a stronger record than the paper decision journal it replaces. '+
+        'Leave this blank and everything stays on the device only.</p>'+
+        '<label class="sub" style="display:block;margin-bottom:4px">Repository</label>'+
+        '<input id="ghRepo" value="'+esc(cfg.repo||'lgaye1211/ciel-site')+'" '+
+          'style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);'+
+          'background:var(--inset);color:var(--ink);font-size:12px;margin-bottom:10px" '+
+          'autocapitalize="off" autocorrect="off" spellcheck="false">'+
+        '<label class="sub" style="display:block;margin-bottom:4px">Fine-grained token</label>'+
+        '<input id="ghToken" type="password" value="'+esc(cfg.token||'')+'" placeholder="github_pat_..." '+
+          'style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);'+
+          'background:var(--inset);color:var(--ink);font-size:12px" '+
+          'autocapitalize="off" autocorrect="off" spellcheck="false">'+
+        '<div class="blocked" style="color:var(--warn);margin-top:9px">'+
+          'Scope it to <b>Contents: read and write</b> on this one repository and nothing else. '+
+          'It is a write credential sitting on a phone — one repository is the entire blast radius. '+
+          'If the device is lost, revoke it at github.com/settings/tokens.</div>'+
+        '<button class="btn-primary" id="ghSave" style="margin-top:11px">Save</button>'+
+        (pendingCount()?'<div class="blocked" style="color:var(--warn)">'+pendingCount()+
+          ' change(s) waiting to sync.</div>':'')+
+      '</div></section>';
+  }
+
+  /* ── RULE 4 — the drawdown takeover ─────────────────── */
+  function drawdownScreen(){
+    return '<section class="zone"><div class="card reveal" style="border-left:3px solid var(--crit)">'+
+      '<h3 style="color:var(--crit);font-size:14px">The market has fallen more than 20%.</h3>'+
+      '<p style="font-size:13px;line-height:1.7;color:var(--ink);margin:10px 0">'+
+      '<b>Rule 4: I do nothing — and I keep contributing. A fall is not a loss; it is a lower purchase price.</b></p>'+
+      '<p style="font-size:12px;line-height:1.7;color:var(--ink-2);font-style:italic">'+
+      esc((CHARTER&&CHARTER.accepted_in_advance)||'')+'</p>'+
+      '<button class="btn-primary" id="ackDraw" style="margin-top:13px">I have re-read it</button>'+
+      '</div></section>';
+  }
+
   /* ── ROUTER ─────────────────────────────────────────── */
   function route(){
     var hash=location.hash||'#/';
     var view=$('#view');
+    if(hash==='#/settings'){
+      view.innerHTML=renderSettings();
+      $('#ghSave').addEventListener('click',function(){
+        ghSave({repo:$('#ghRepo').value.trim(),token:$('#ghToken').value.trim()});
+        flushPending();
+        this.textContent='Saved';
+      });
+      hydrate();window.scrollTo(0,0);return;
+    }
     if(hash.indexOf('#/c/')===0){
       var slug=hash.slice(4);
       view.innerHTML='<div class="empty">Loading '+esc(slug)+'…</div>';
@@ -793,17 +1012,32 @@
     var btn=$('#acceptBtn');
     if(btn)btn.addEventListener('click',function(){
       if(!chosen){var w=$('#confWarn');if(w)w.hidden=false;return;}
-      POS[d.slug]={
+      var record={
         slug:d.slug,name:d.name,ticker:d.ticker,cik:d.cik,
         confidence:chosen,
         accepted_at:new Date().toISOString(),
         accepted_score:(d.score&&d.score.total)||null,
+        accepted_cohort:(L&&L.cohort)||'',
         rubric_version:(d.score&&d.score.rubric_version)||'',
-        bull:(d.bull||[]).map(function(e){return e.text;}),
-        bear:(d.bear||[]).map(function(e){return e.text;}),
-        triggers:d.triggers||[]
+        // Store what the app argued at the time. A year on, the review replays
+        // this against what actually happened - Appendix B's retrospective,
+        // without you having had to write anything.
+        argued_for:(d.bull||[]).map(function(e){return e.text;}),
+        argued_against:(d.bear||[]).map(function(e){return e.text;}),
+        metrics_at_accept:d.metrics||{},
+        triggers:d.triggers||[],
+        pre_cleared:false
       };
+      POS[d.slug]=record;
       savePos();
+
+      var path='charter/positions/'+d.slug+'.json';
+      var msg='sleeve: accept '+d.name+' (confidence '+chosen+'/5)';
+      if(ghConfig()){
+        ghPut(path,record,msg).catch(function(){queuePending({path:path,payload:record,message:msg});});
+      }else{
+        queuePending({path:path,payload:record,message:msg});
+      }
       location.hash='#/';
     });
   }
@@ -821,9 +1055,12 @@
 
   Promise.all([
     fetch(DATA+'manifest.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
-    fetch(DATA+'latest.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
+    fetch(DATA+'latest.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+    fetch('charter/charter.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+    fetch('scanner/config/costs.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
   ]).then(function(res){
-    M=res[0];L=res[1];
+    M=res[0];L=res[1];CHARTER=res[2];COSTS=res[3];
+    flushPending();
     if(!L){
       $('#view').innerHTML='<div class="empty"><b>No scan data yet.</b>'+
         'Run the scanner to produce data/sleeve/latest.json.'+

@@ -114,6 +114,23 @@ def build(company):
             "A foreign private issuer reporting annually rather than quarterly. Problems surface "
             "months later here than they would at a domestic filer.", company.filing_url("")))
 
+    selling = m.get("insider_selling")
+    if selling is not None and selling > 0.03:
+        out.append(Evidence(
+            "Insiders disposed of %s of their combined holdings over the last four quarters "
+            "(%s shares across %d ownership filings). People with the best view of the business "
+            "were reducing their stake." % (
+                pct(selling), "{:,.0f}".format(m.get("insider_sold_shares", 0)),
+                m.get("insider_filings_read", 0)),
+            m.get("insider_selling_url", company.filing_url(""))))
+
+    ownership = m.get("insider_ownership")
+    if ownership is not None and ownership < 0.02:
+        out.append(Evidence(
+            "Officers and directors hold only %s of the shares. There is little alignment between "
+            "what happens to the share price and what happens to them." % pct(ownership),
+            m.get("insider_ownership_url", company.filing_url(""))))
+
     if not company.team:
         out.append(Evidence(
             "No officer history could be reconstructed from public filings, so the team - the "

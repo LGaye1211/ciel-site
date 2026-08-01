@@ -143,9 +143,12 @@ def company_dossier(company):
         "bear": company.thesis.get("bear", []),
         "triggers": company.triggers,
         "team": company.team,
-        "team_note": "Officer history is reconstructed from public filings. Filings name officers "
-                     "as of the filing date, and acquisitions leave almost no SEC trace, so this "
-                     "understates success and misses anyone who left before the filing.",
+        "team_note": "Taken from Form 3/4/5 ownership filings over the last four quarters. These "
+                     "are the people who filed, not necessarily the whole team - anyone who "
+                     "neither holds nor trades shares does not appear. Holdings and sales are "
+                     "counted only where a filing names a single insider, so joint filings are "
+                     "excluded rather than split. There is no free structured source for "
+                     "executive biographies, so prior-company history is not available here.",
         "metrics": {k: v for k, v in m.items() if not isinstance(v, (list, dict))},
         "series": series_out,
         "score": score.to_json() if score else {},

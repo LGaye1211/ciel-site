@@ -132,6 +132,18 @@ class Company:
     forms: list = field(default_factory=list)
     is_foreign_filer: bool = False
 
+    # Set by the pipeline; declared here so a bare Company is still usable.
+    listed_years: float = None
+    annual_only: bool = False
+    is_shell: bool = False
+    is_leveraged: bool = False
+    stale: bool = False
+    has_older_filings: bool = False
+    entity_category: str = ""
+    description: str = ""
+    website: str = ""
+    recent_filings: list = field(default_factory=list)
+
     # Derived quarterly series, keyed by our own metric name.
     series: dict = field(default_factory=dict)
     metrics: dict = field(default_factory=dict)

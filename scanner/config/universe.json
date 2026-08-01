@@ -1,21 +1,35 @@
 {
   "_comment": "Defines what counts as a 'young listed company'. Tune freely - run.py reads this on every run.",
-
   "max_years_since_first_annual": 8,
   "min_quarters_of_data": 3,
   "max_days_since_last_filing": 400,
-
   "max_total_assets_usd": 20000000000,
-  "min_revenue_ttm_usd": 1000000,
-
-  "allowed_forms_annual": ["10-K", "20-F", "40-F"],
-
+  "min_revenue_ttm_usd": 10000000,
+  "min_revenue_note": "A listed operating business you could read an annual report about. Below roughly $10m of trailing revenue you are into nanocaps whose shares are too thin to enter or leave without moving the price.",
+  "max_data_age_months": 9,
+  "max_data_age_months_annual": 20,
+  "max_data_age_note": "How old the newest tagged figure may be. A company can file on time while its XBRL series stops years earlier, usually after a tag change SEC never framed. 20-F filers report annually and get the longer window.",
+  "min_series_density": 0.6,
+  "min_series_density_note": "Fraction of the quarters the series spans that are actually reported. Growth measured across holes is not growth.",
+  "allowed_forms_annual": [
+    "10-K",
+    "20-F",
+    "40-F"
+  ],
   "sic_blocklist": [
-    "6770", "6199", "6726", "6722", "6798", "6221", "6189",
-    "6552", "6500", "6531", "0000"
+    "6770",
+    "6199",
+    "6726",
+    "6722",
+    "6798",
+    "6221",
+    "6189",
+    "6552",
+    "6500",
+    "6531",
+    "0000"
   ],
   "sic_blocklist_note": "Blank checks, unit investment trusts, REITs, asset-backed issuers, commodity dealers - not operating companies.",
-
   "name_blocklist_patterns": [
     "acquisition corp",
     "acquisition co",
@@ -29,14 +43,21 @@
     "royalty trust",
     "depositar"
   ],
-
   "leveraged_patterns": [
-    "2x ", "3x ", "ultra", "ultrashort", "inverse", "bear ", "bull ",
-    "leveraged", "daily target"
+    "2x ",
+    "3x ",
+    "ultra",
+    "ultrashort",
+    "inverse",
+    "bear ",
+    "bull ",
+    "leveraged",
+    "daily target"
   ],
-
   "frames_quarters_back": 6,
   "max_companies_to_enrich": 900,
   "publish_top_n": 150,
-  "write_dossiers_top_n": 400
+  "write_dossiers_top_n": 400,
+  "ownership_filings_per_company": 14,
+  "ownership_note": "Form 3/4/5 filings read per company. Each is one request, so this is the main cost driver of a deep scan."
 }

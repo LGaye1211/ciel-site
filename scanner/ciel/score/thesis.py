@@ -34,10 +34,11 @@ def build_bull(company):
     share = m.get("growth_positive_share")
     if share is not None and share >= 0.75 and m.get("growth_observations", 0) >= 4:
         url, accn = _url(company, "revenue")
+        n = m.get("growth_observations", 0)
+        count = "all %d" % n if share >= 0.999 else "%d of the last %d" % (round(share * n), n)
         out.append(Evidence(
-            "Growth has been positive in %s of the last %d year-on-year comparisons, so this is "
-            "a trend rather than one good quarter." % (
-                pct(share), m.get("growth_observations", 0)), url, accn))
+            "Growth has been positive in %s year-on-year comparisons, so this is a trend rather "
+            "than one good quarter." % count, url, accn))
 
     margin = m.get("gross_margin")
     if margin is not None and margin > 0.45:
@@ -90,15 +91,23 @@ def build_bull(company):
 def build_summary(company):
     """The three-sentence explanation charter rule 7 demands."""
     m = company.metrics
-    what = company.sic_description or "an operating business"
     where = company.country or company.state
     listing = "Listed on %s" % ", ".join(company.exchanges) if company.exchanges else "SEC-reporting"
 
-    one = "%s is %s%s, classified by the SEC under \"%s\"." % (
-        company.name, "a " if not what[:1].isupper() else "", what.lower(),
-        company.sic_description or "n/a")
+    # SIC descriptions are terse industry codes ("Services-Prepackaged
+    # Software"), not sentences, so they are quoted as a classification rather
+    # than dropped into prose as a noun phrase.
+    sic = company.sic_description
+    if sic:
+        one = "%s files with the SEC under \"%s\"" % (company.name, sic)
+    else:
+        one = "%s is an SEC-reporting operating business" % company.name
     if where:
-        one = one[:-1] + ", based in %s." % where
+        one += ", based in %s" % where
+    if company.listed_years is not None:
+        one += ", and has been publicly reporting for %.0f year%s" % (
+            company.listed_years, "" if round(company.listed_years) == 1 else "s")
+    one += "."
 
     revenue = m.get("revenue_ttm")
     growth = m.get("revenue_growth_yoy")

@@ -11,6 +11,8 @@
     { "id": "leveraged_instrument", "label": "Leveraged, inverse or derivative-based instrument" },
     { "id": "no_revenue",           "label": "No reported revenue" },
     { "id": "stale_filings",        "label": "No filing within the allowed window" },
+    { "id": "stale_data",           "label": "Reported figures too old to describe the business today" },
+    { "id": "gapped_series",        "label": "Reporting series has too many holes to read" },
     { "id": "insufficient_history", "label": "Too few reported quarters to judge" }
   ],
   "disqualifier_note": "Ellis, The Loser's Game (1975): you win by ceasing to commit errors, not by hitting winners. These are hard cuts - a company failing any one of them is never scored, never ranked, and never shown as a candidate.",
