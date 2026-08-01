@@ -35,6 +35,9 @@ jobs:
         run: |
           brew install xcodegen
           cd ios/CielSleeve && xcodegen generate
+          # Printed so a scheme mismatch is obvious in the log rather than
+          # surfacing as an opaque "scheme not found" from xcodebuild.
+          xcodebuild -list -project CielSleeve.xcodeproj
 
       - name: Build (unsigned)
         run: |
