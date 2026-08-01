@@ -1,0 +1,9 @@
+scanner/.cache/
+__pycache__/
+*.pyc
+.DS_Store
+build/
+Payload/
+*.ipa
+# Generated from ios/CielSleeve/project.yml by XcodeGen at build time.
+ios/CielSleeve/CielSleeve.xcodeproj/

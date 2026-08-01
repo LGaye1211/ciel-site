@@ -1,0 +1,79 @@
+name: Sleeve — quarterly deep scan
+
+on:
+  schedule:
+    # 08:00 UTC on the 8th of Jan/Apr/Jul/Oct, after the quarter's filings land.
+    - cron: '0 8 8 1,4,7,10 *'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Cap companies enriched (0 = config default)'
+        default: '0'
+      dry_run:
+        description: 'Skip the commit'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sleeve-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+        # No pip install step: the scanner is stdlib-only on purpose, so there
+        # is no requirements.txt and no dependency resolver in the loop.
+
+      - name: Restore scan cache
+        uses: actions/cache@v4
+        with:
+          path: scanner/.cache
+          key: sleeve-cache-${{ github.run_id }}
+          restore-keys: |
+            sleeve-cache-
+
+      - name: Self-test
+        run: python -m unittest discover -s scanner/tests -t .
+
+      - name: Deep scan
+        env:
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          COMPANIES_HOUSE_KEY: ${{ secrets.COMPANIES_HOUSE_KEY }}
+        run: |
+          python scanner/run.py --mode deep \
+            ${{ github.event.inputs.limit != '0' && format('--limit {0}', github.event.inputs.limit) || '' }}
+
+      - name: Verify output
+        run: python scanner/verify.py
+
+      - name: Commit
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          git config user.name  "ciel-scanner"
+          git config user.email "actions@github.com"
+          git add data/sleeve
+          if git diff --staged --quiet; then
+            echo "no change"
+          else
+            git commit -m "sleeve: quarterly scan $(date -u +%Y-%m-%d)"
+            git push
+          fi
+
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-log
+          path: scanner/.cache/run.log
+          retention-days: 30
+          if-no-files-found: ignore

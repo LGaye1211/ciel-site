@@ -1,0 +1,20 @@
+{
+  "_comment": "Swiss cost model. Dossier 4.3 and 4.4. All figures CHF unless stated.",
+
+  "stamp_duty_swiss": 0.00075,
+  "stamp_duty_foreign": 0.0015,
+  "stamp_duty_note": "Federal securities transfer tax: 0.075% Swiss, 0.15% foreign.",
+
+  "brokerage_flat_chf": 9.0,
+  "brokerage_pct": 0.0,
+  "fx_spread_pct": 0.005,
+
+  "max_total_cost_pct": 0.005,
+  "max_total_cost_note": "Dossier 4.4: total costs should stay below 0.5% of the amount invested.",
+
+  "min_order_chf": 500,
+  "recommended_order_chf": 1000,
+
+  "core_world_ter": 0.0025,
+  "core_swiss_ter": 0.0010
+}

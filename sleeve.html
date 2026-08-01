@@ -1,0 +1,1799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>CIEL — Learning Sleeve</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070d18'/%3E%3Cpath d='M6 24 L24 8' stroke='%23cbb078' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='24' cy='8' r='3.2' fill='%23cbb078'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+  /* ─────────────────────────────────────────────────────────────
+     THEME TOKENS — same contract as dashboard.html: every token is
+     declared in :root, the prefers-color-scheme block, the explicit
+     [data-theme="light"] block, and the print block. Miss one and the
+     theme toggle produces invisible text.
+     ───────────────────────────────────────────────────────────── */
+  :root{
+    color-scheme:dark;
+    --page:#070d18; --plane:#0a1322; --card-a:#111f33; --card-b:#0d1828;
+    --card-solid:#0e1a2c; --inset:#0a1524;
+    --ink:#eef3fc; --ink-2:#b3c0d8; --muted:#7182a0; --dim:#48566f;
+    --blue:#3d8bf0; --blue-lg:#7cb2ff; --gold:#cbb078; --gold-lg:#e6d3a3;
+    --good:#16b877; --warn:#f5ad1f; --serious:#ee7f4e; --crit:#e24d4d;
+    --grid:#1b2841; --track:#17233b;
+    --border:rgba(150,180,225,.10); --border-2:rgba(124,178,255,.20);
+    --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 10px 30px -12px rgba(0,0,0,.6);
+    --ring:rgba(124,178,255,.55);
+    --c-blue:#6fb0ff; --c-good:#3ad999; --c-gold:#e0c489; --c-warn:#f6c85a;
+    --c-crit:#f28080; --c-target:#7182a0;
+    --bull:#16b877; --bear:#e24d4d; --slot:#cbb078;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      color-scheme:light;
+      --page:#eaeef4; --plane:#e3e9f1; --card-a:#ffffff; --card-b:#f6f8fc;
+      --card-solid:#ffffff; --inset:#f1f4f9;
+      --ink:#0f1d30; --ink-2:#3c4c66; --muted:#68758c; --dim:#9aa6ba;
+      --blue:#2467cf; --blue-lg:#1f5cbb; --gold:#93752f; --gold-lg:#7c621f;
+      --good:#0a8f3c; --warn:#c6820a; --serious:#c85a2c; --crit:#c5383a;
+      --grid:#dbe2ec; --track:#e6ebf3;
+      --border:rgba(15,29,48,.10); --border-2:rgba(36,103,207,.22);
+      --shadow:0 1px 2px rgba(15,29,48,.04), 0 12px 28px -16px rgba(15,29,48,.22);
+      --ring:rgba(36,103,207,.5);
+      --c-blue:#2467cf; --c-good:#0a8f3c; --c-gold:#93752f; --c-warn:#c6820a;
+      --c-crit:#c5383a; --c-target:#8b98ad;
+      --bull:#0a8f3c; --bear:#c5383a; --slot:#93752f;
+    }
+  }
+  :root[data-theme="light"]{
+    color-scheme:light;
+    --page:#eaeef4; --plane:#e3e9f1; --card-a:#ffffff; --card-b:#f6f8fc;
+    --card-solid:#ffffff; --inset:#f1f4f9;
+    --ink:#0f1d30; --ink-2:#3c4c66; --muted:#68758c; --dim:#9aa6ba;
+    --blue:#2467cf; --blue-lg:#1f5cbb; --gold:#93752f; --gold-lg:#7c621f;
+    --good:#0a8f3c; --warn:#c6820a; --serious:#c85a2c; --crit:#c5383a;
+    --grid:#dbe2ec; --track:#e6ebf3;
+    --border:rgba(15,29,48,.10); --border-2:rgba(36,103,207,.22);
+    --shadow:0 1px 2px rgba(15,29,48,.04), 0 12px 28px -16px rgba(15,29,48,.22);
+    --ring:rgba(36,103,207,.5);
+    --c-blue:#2467cf; --c-good:#0a8f3c; --c-gold:#93752f; --c-warn:#c6820a;
+    --c-crit:#c5383a; --c-target:#8b98ad;
+    --bull:#0a8f3c; --bear:#c5383a; --slot:#93752f;
+  }
+
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{
+    background:
+      radial-gradient(1200px 640px at 10% -10%, color-mix(in srgb, var(--blue) 12%, transparent), transparent 60%),
+      radial-gradient(900px 520px at 95% -6%, color-mix(in srgb, var(--gold) 10%, transparent), transparent 55%),
+      var(--page);
+    color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding-bottom:calc(72px + env(safe-area-inset-bottom));
+    overflow-x:hidden;
+  }
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--muted) 45%,transparent);border-radius:6px;border:2px solid transparent;background-clip:padding-box}
+  :focus-visible{outline:2px solid var(--ring);outline-offset:2px;border-radius:6px}
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+  .tnum{font-variant-numeric:tabular-nums}
+  svg{display:block}
+  a{color:var(--blue-lg)}
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+
+  /* ── HEADER ────────────────────────────────────────── */
+  header{
+    position:sticky;top:0;z-index:60;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 10px;
+    background:color-mix(in srgb,var(--plane) 88%,transparent);
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-bottom:1px solid var(--border);
+  }
+  .hrow{display:flex;align-items:center;gap:10px;max-width:1360px;margin:0 auto}
+  .brand{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;letter-spacing:.16em;color:var(--ink);white-space:nowrap}
+  .brand span{color:var(--gold)}
+  .hspace{flex:1}
+  /* 44px minimum: Apple's Human Interface Guidelines tap-target size. */
+  .iconbtn{width:44px;height:44px;border-radius:11px;border:1px solid var(--border);
+    background:var(--card-b);display:grid;place-items:center;color:var(--ink-2);flex:none}
+  .iconbtn svg{width:18px;height:18px}
+  .iconbtn:hover{border-color:var(--border-2);color:var(--ink)}
+  .pills{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px;
+    max-width:1360px;margin-left:auto;margin-right:auto;scrollbar-width:none}
+  .pills::-webkit-scrollbar{display:none}
+  .pill{display:inline-flex;align-items:center;gap:5px;flex:none;
+    padding:4px 9px;border-radius:999px;border:1px solid var(--border);
+    background:var(--card-b);font-size:10.5px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+  .pill svg{width:11px;height:11px}
+  .pill.good{color:var(--good);border-color:color-mix(in srgb,var(--good) 34%,transparent)}
+  .pill.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 34%,transparent)}
+  .pill.crit{color:var(--crit);border-color:color-mix(in srgb,var(--crit) 34%,transparent)}
+  .pill.gold{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 34%,transparent)}
+
+  .wrap{max-width:1360px;margin:0 auto;padding:0 14px}
+
+  /* ── STANDING DISCLAIMER ───────────────────────────── */
+  .standing{
+    margin:12px auto 0;max-width:1360px;
+    border:1px solid color-mix(in srgb,var(--gold) 26%,transparent);
+    background:color-mix(in srgb,var(--gold) 7%,var(--card-b));
+    border-radius:12px;padding:9px 12px;font-size:11.5px;line-height:1.5;color:var(--ink-2);
+  }
+  .standing b{color:var(--gold-lg)}
+
+  /* ── SECTIONS ──────────────────────────────────────── */
+  .zone{margin-top:22px;scroll-margin-top:110px}
+  .zone-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .zone-ic{width:30px;height:30px;border-radius:9px;flex:none;
+    display:grid;place-items:center;color:var(--blue-lg);
+    background:color-mix(in srgb,var(--blue) 14%,transparent);
+    border:1px solid var(--border-2)}
+  .zone-ic svg{width:15px;height:15px}
+  .zone-h h2{font-size:14.5px;font-weight:700;letter-spacing:-.01em}
+  .zone-h p{font-size:11px;color:var(--muted);margin-top:1px}
+  .line{flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);min-width:12px}
+
+  .card{background:linear-gradient(160deg,var(--card-a),var(--card-b));
+    border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+  .card h3{font-size:12px;font-weight:700;letter-spacing:.02em;margin-bottom:9px}
+  .sub{font-size:10.5px;color:var(--muted);font-weight:500}
+
+  /* ── CHARTER STRIP ─────────────────────────────────── */
+  .strip{margin-top:12px;border:1px solid var(--border);border-radius:12px;
+    background:var(--card-b);overflow:hidden}
+  .strip-main{display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;
+    text-align:left;min-height:52px}
+  .strip-main:hover{background:var(--card-a)}
+  .chips{display:flex;gap:4px;flex:none}
+  .chip{width:26px;height:26px;border-radius:7px;border:1px dashed var(--border-2);
+    display:grid;place-items:center;font-size:9px;font-weight:700;color:var(--dim);
+    overflow:hidden}
+  .chip.filled{border-style:solid;border-color:color-mix(in srgb,var(--slot) 50%,transparent);
+    background:color-mix(in srgb,var(--slot) 12%,transparent);color:var(--gold-lg)}
+  .strip-txt{flex:1;font-size:11.5px;color:var(--ink-2);min-width:0}
+  .strip-txt b{color:var(--ink)}
+  .strip-go{color:var(--muted);flex:none;transition:transform .2s}
+  .strip-go svg{width:15px;height:15px}
+  .strip-main.open .strip-go{transform:rotate(90deg)}
+  .strip-more{padding:0 12px 12px}
+
+  /* ── BASE RATES (never dismissible) ────────────────── */
+  .baserate{border-left:3px solid var(--crit);padding-left:11px;margin-top:9px}
+  .baserate p{font-size:11px;line-height:1.55;color:var(--ink-2);margin-bottom:7px}
+  .baserate cite{display:block;font-size:9.5px;color:var(--muted);font-style:normal;margin-top:2px}
+
+  /* ── ELIMINATION HEADER ────────────────────────────── */
+  .elim{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;margin-bottom:10px}
+  .elim .n{font-size:26px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .elim .n.out{color:var(--crit)}
+  .elim .n.in{color:var(--good)}
+  .elim .lbl{font-size:10.5px;color:var(--muted);font-weight:600}
+  .elim button{font-size:10.5px;color:var(--blue-lg);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+
+  /* ── QUEUE ─────────────────────────────────────────── */
+  /* Mobile: rank | name+meta | score on one line, then a slim dims+spark strip.
+     Stacking the chart above the score made each row half a screen tall, so you
+     could only ever see two companies at once. */
+  .qrow{display:grid;gap:3px 9px;align-items:center;padding:10px 12px;border-radius:12px;
+    border:1px solid var(--border);background:var(--card-b);margin-bottom:6px;
+    grid-template-columns:22px 1fr 52px;cursor:pointer;text-align:left;width:100%}
+  .qrow:hover{border-color:var(--border-2);background:var(--card-a)}
+  .qrow:active{background:var(--card-a);transform:scale(.995)}
+  /* Placement is explicit throughout: auto-flow silently collides once a cell
+     spans rows, and the failure looks like a styling glitch rather than a bug. */
+  .qrank{grid-area:1/1/2/2;font-size:11px;font-weight:800;color:var(--muted);
+    font-variant-numeric:tabular-nums;align-self:start;padding-top:2px}
+  .qtitle{grid-area:1/2/2/3;min-width:0}
+  .qname{font-size:13px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
+  .qmeta{font-size:10px;color:var(--muted);margin-top:2px;display:flex;flex-wrap:wrap;gap:2px 7px}
+  .qscore{grid-area:1/3/2/4;text-align:right;align-self:start}
+  .qscore b{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;display:block;line-height:1.1}
+  .qscore span{font-size:8px;color:var(--muted);font-weight:600;letter-spacing:.04em}
+  .dims{grid-area:2/1/3/4;display:flex;gap:2px;margin-top:6px}
+  .dims i{height:4px;border-radius:2px;background:var(--track);flex:1;position:relative;overflow:hidden}
+  .dims i::after{content:'';position:absolute;inset:0 auto 0 0;width:var(--w,0%);
+    background:var(--c);border-radius:2px;transition:width .8s cubic-bezier(.22,1,.36,1)}
+  .qspark{grid-area:3/1/4/4;margin-top:2px;opacity:.85}
+  .qflags{grid-area:4/1/5/4;display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+  .flag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;
+    background:color-mix(in srgb,var(--crit) 13%,transparent);color:var(--crit);
+    border:1px solid color-mix(in srgb,var(--crit) 26%,transparent)}
+
+  /* ── DOSSIER ───────────────────────────────────────── */
+  .back{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;
+    color:var(--blue-lg);margin-bottom:12px}
+  .back svg{width:13px;height:13px;transform:rotate(180deg)}
+  .dhead h1{font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+  .dhead .qmeta{font-size:11px;margin-top:5px}
+  .cases{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
+  .case{border-radius:13px;padding:13px;border:1px solid var(--border);background:var(--card-b)}
+  .case.bull{border-left:3px solid var(--bull)}
+  .case.bear{border-left:3px solid var(--bear)}
+  .case h3{display:flex;align-items:center;gap:7px;margin-bottom:10px}
+  .case.bull h3{color:var(--bull)} .case.bear h3{color:var(--bear)}
+  .case h3 svg{width:14px;height:14px}
+  .case ul{list-style:none}
+  .case li{font-size:11.5px;line-height:1.6;color:var(--ink-2);padding:7px 0;
+    border-top:1px solid var(--border)}
+  .case li:first-child{border-top:none;padding-top:0}
+  /* Padded out to a comfortable tap size without disturbing the line flow. */
+  .case li a{font-size:10px;font-weight:600;text-decoration:none;
+    display:inline-flex;align-items:center;gap:3px;white-space:nowrap;
+    padding:6px 8px;margin:-4px 0 -4px 2px;border-radius:6px;
+    background:color-mix(in srgb,var(--blue) 10%,transparent)}
+  .case li a::after{content:'↗'}
+  .case li a:active{background:color-mix(in srgb,var(--blue) 22%,transparent)}
+  .back{padding:8px 10px 8px 0;margin-left:-2px}
+
+  .summary{background:var(--inset);border-radius:12px;padding:13px;margin-top:12px;
+    border:1px solid var(--border)}
+  .summary p{font-size:12.5px;line-height:1.65;color:var(--ink);margin-bottom:6px}
+  .summary .note{font-size:10.5px;color:var(--muted);line-height:1.5;margin-top:8px;
+    padding-top:8px;border-top:1px solid var(--border)}
+
+  /* ── TRIGGERS ──────────────────────────────────────── */
+  .trig{border:1px solid var(--border);border-radius:11px;padding:11px;margin-bottom:8px;
+    background:var(--card-b)}
+  .trig.fired{border-color:var(--crit);background:color-mix(in srgb,var(--crit) 9%,var(--card-b))}
+  .trig-top{display:flex;align-items:flex-start;gap:9px;justify-content:space-between}
+  .trig-lab{font-size:11.5px;font-weight:700;line-height:1.4}
+  .trig-now{font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap;
+    font-variant-numeric:tabular-nums}
+  .trig-why{font-size:10.5px;color:var(--muted);line-height:1.5;margin-top:6px}
+  .trig input[type=range]{width:100%;margin-top:9px;accent-color:var(--blue)}
+  .trig-off{opacity:.42}
+
+  .accept{position:sticky;bottom:0;z-index:40;margin-top:16px;
+    padding:12px 0 calc(12px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,transparent,var(--page) 26%)}
+  .conf{display:flex;gap:6px;margin-bottom:9px}
+  .conf button{flex:1;padding:9px 0;border-radius:9px;border:1px solid var(--border);
+    background:var(--card-b);font-size:12px;font-weight:700;color:var(--muted)}
+  .conf button[aria-pressed=true]{border-color:var(--gold);color:var(--gold);
+    background:color-mix(in srgb,var(--gold) 12%,transparent)}
+  .btn-primary{width:100%;padding:13px;border-radius:11px;font-size:13px;font-weight:700;
+    background:linear-gradient(135deg,var(--blue),color-mix(in srgb,var(--blue) 70%,var(--gold)));
+    color:#fff;border:none}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed;background:var(--track);color:var(--muted)}
+  .blocked{font-size:10.5px;color:var(--crit);margin-top:7px;line-height:1.5;font-weight:600}
+
+  /* ── QUARTERLY TABLE ───────────────────────────────── */
+  .qtable{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .qhead,.qline{display:grid;grid-template-columns:64px 1fr 52px 50px 1fr 22px;
+    gap:8px;align-items:center;padding:8px 14px;min-width:400px}
+  .qhead{font-size:9px;font-weight:700;letter-spacing:.05em;color:var(--muted);
+    text-transform:uppercase;border-bottom:1px solid var(--border)}
+  .qline{font-size:11px;border-bottom:1px solid var(--border)}
+  .qline:last-child{border-bottom:none}
+  .qline span:nth-child(n+2){text-align:right}
+  .qline a{text-decoration:none;font-size:12px}
+
+  /* ── TIMELINE ──────────────────────────────────────── */
+  .tl{display:grid;grid-template-columns:72px 8px 1fr;gap:9px;align-items:baseline;
+    padding:7px 0;border-top:1px solid var(--border);text-decoration:none;color:inherit}
+  .tl:first-child{border-top:none}
+  .tl:hover{background:color-mix(in srgb,var(--blue) 6%,transparent)}
+  .tl-d{font-size:10px;color:var(--muted);white-space:nowrap}
+  .tl-b{width:7px;height:7px;border-radius:50%;background:var(--blue);align-self:center}
+  .tl-b[data-t="crit"]{background:var(--crit)}
+  .tl-b[data-t="warn"]{background:var(--warn)}
+  .tl-b[data-t="good"]{background:var(--good)}
+  .tl-b[data-k="listing"]{background:var(--gold)}
+  .tl-b[data-k="funding"]{background:var(--good)}
+  .tl-b[data-k="finance"]{background:var(--warn)}
+  .tl-b[data-k="governance"]{background:var(--muted)}
+  .tl-t{font-size:11.5px;line-height:1.45;color:var(--ink-2)}
+
+  /* ── COVERAGE ──────────────────────────────────────── */
+  .gaps li{font-size:11px;line-height:1.6;color:var(--ink-2);padding:7px 0 7px 16px;
+    border-top:1px solid var(--border);position:relative;list-style:none}
+  .gaps li:first-child{border-top:none}
+  .gaps li::before{content:'—';position:absolute;left:0;color:var(--muted)}
+
+  .empty{text-align:center;padding:40px 16px;color:var(--muted);font-size:12px;line-height:1.6}
+  .empty b{display:block;color:var(--ink);font-size:14px;margin-bottom:6px}
+  .empty code{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--inset);
+    padding:2px 6px;border-radius:5px;display:inline-block;margin-top:8px}
+
+  #tip{position:fixed;z-index:200;pointer-events:none;opacity:0;transition:opacity .12s;
+    background:var(--card-solid);border:1px solid var(--border-2);border-radius:9px;
+    padding:8px 10px;font-size:11px;max-width:280px;box-shadow:var(--shadow);line-height:1.5}
+  #tip.on{opacity:1}
+  #tip b{display:block;margin-bottom:3px}
+  #tip .tk{color:var(--muted);font-size:10px}
+
+  .reveal{opacity:0;transform:translateY(10px);transition:opacity .5s,transform .5s}
+  .reveal.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){
+    .reveal{opacity:1;transform:none;transition:none}
+    .cap-fill,.dims i::after{transition:none}
+  }
+
+  /* ── BREAKPOINTS ───────────────────────────────────── */
+  @media(min-width:760px){
+    .wrap,.hrow,.pills,.standing{padding-left:20px;padding-right:20px}
+    .charter{grid-template-columns:1.4fr 1fr;align-items:start}
+    .cases{grid-template-columns:1fr 1fr;align-items:start}
+    /* One row on desktop: rank | name | dims | spark | score. */
+    .qrow{grid-template-columns:34px minmax(180px,1fr) 96px 150px 64px;gap:12px}
+    .qrank{grid-area:1/1/2/2;align-self:center;padding-top:0}
+    .qtitle{grid-area:1/2/2/3}
+    .dims{grid-area:1/3/2/4;margin-top:0;gap:3px;align-self:center}
+    .dims i{height:18px;border-radius:3px}
+    .qspark{grid-area:1/4/2/5;margin-top:0;align-self:center}
+    .qscore{grid-area:1/5/2/6;align-self:center}
+    .qflags{grid-area:2/2/3/6;margin-top:4px}
+    .dhead h1{font-size:26px}
+  }
+  @media(min-width:1180px){
+    .charter{grid-template-columns:1.5fr 1fr 1fr}
+    .qrow{grid-template-columns:38px minmax(240px,1fr) 120px 190px 72px}
+  }
+
+  /* ── ASK — the Claude panel ─────────────────────────
+     A bottom sheet rather than a sidebar, because the phone is the primary
+     surface and a sidebar at 390px is a full-screen takeover with extra steps.
+     Colours are all existing tokens: adding a new one means declaring it in
+     four places and the print block, and nothing here needs a new hue. */
+  .askfab{position:fixed;right:14px;z-index:60;
+    bottom:calc(16px + env(safe-area-inset-bottom));
+    height:46px;padding:0 16px;border-radius:999px;border:1px solid var(--border-2);
+    background:var(--card-solid);color:var(--ink);box-shadow:var(--shadow);
+    display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:650}
+  /* The dossier has a sticky accept bar pinned to the bottom, and at 390px the
+     button covers the right third of it. Lift the button clear when that bar is
+     on screen rather than letting Ask sit on top of the primary action. */
+  body.has-accept .askfab{bottom:calc(120px + env(safe-area-inset-bottom))}
+  .askfab svg{width:16px;height:16px;color:var(--gold)}
+  .askfab:hover{border-color:var(--gold)}
+  .asksheet{position:fixed;inset:auto 0 0 0;z-index:70;display:none;
+    background:var(--card-solid);border-top:1px solid var(--border-2);
+    border-radius:16px 16px 0 0;box-shadow:0 -18px 50px rgba(0,0,0,.32);
+    max-height:min(86vh,860px);flex-direction:column}
+  .asksheet.on{display:flex}
+  .askscrim{position:fixed;inset:0;z-index:65;display:none;background:rgba(0,0,0,.42)}
+  .askscrim.on{display:block}
+  .askhead{display:flex;align-items:center;gap:9px;padding:12px 14px 10px;
+    border-bottom:1px solid var(--border);flex:none}
+  .askhead h3{font-size:13px;font-weight:700;color:var(--ink);margin:0}
+  .askhead .sub{font-size:10.5px;margin-top:1px}
+  .askhead .askic{width:28px;height:28px;border-radius:9px;flex:none;display:grid;place-items:center;
+    background:color-mix(in srgb,var(--gold) 14%,transparent);color:var(--gold)}
+  .askhead .askic svg{width:14px;height:14px}
+  .askx{margin-left:auto;width:34px;height:34px;border-radius:9px;border:1px solid var(--border);
+    background:var(--inset);color:var(--ink-2);display:grid;place-items:center;flex:none}
+  .askx svg{width:14px;height:14px}
+  .askbody{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px;flex:1 1 auto}
+  .askchips{display:flex;gap:6px;overflow-x:auto;padding:9px 14px 0;flex:none;scrollbar-width:none}
+  .askchips::-webkit-scrollbar{display:none}
+  .askchip{flex:none;padding:6px 11px;border-radius:999px;border:1px solid var(--border);
+    background:var(--inset);color:var(--ink-2);font-size:11px;font-weight:600;white-space:nowrap}
+  .askchip:hover{border-color:var(--gold);color:var(--ink)}
+  .askform{display:flex;gap:8px;align-items:flex-end;padding:10px 14px;flex:none;
+    padding-bottom:calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--border)}
+  .askform textarea{flex:1;resize:none;min-height:42px;max-height:132px;padding:11px;
+    border-radius:11px;border:1px solid var(--border);background:var(--inset);
+    color:var(--ink);font:inherit;font-size:13px;line-height:1.45}
+  .askform textarea:focus{outline:none;border-color:var(--gold)}
+  .asksend{width:42px;height:42px;flex:none;border-radius:11px;border:1px solid var(--gold);
+    background:color-mix(in srgb,var(--gold) 16%,transparent);color:var(--gold-lg);
+    display:grid;place-items:center}
+  .asksend:disabled{opacity:.4;border-color:var(--border);color:var(--muted);background:var(--inset)}
+  .asksend svg{width:16px;height:16px}
+  .msg{margin-bottom:13px;font-size:12.5px;line-height:1.65}
+  .msg.me{margin-left:auto;max-width:86%;background:var(--inset);border:1px solid var(--border);
+    border-radius:12px 12px 3px 12px;padding:9px 11px;color:var(--ink);width:fit-content}
+  .msg.ai{color:var(--ink)}
+  .msg.ai p{margin:0 0 8px}
+  .msg.ai ul{margin:0 0 8px;padding-left:17px}
+  .msg.ai li{margin-bottom:4px}
+  .msg.ai strong{color:var(--ink);font-weight:700}
+  .msg.ai code{font-family:'JetBrains Mono',monospace;font-size:11.5px;
+    background:var(--inset);padding:1px 4px;border-radius:4px;color:var(--gold-lg)}
+  .msg.err{color:var(--crit);font-size:11.5px;border-left:2px solid var(--crit);padding-left:9px}
+  .askctx{font-size:10.5px;color:var(--dim);margin-bottom:11px;
+    padding-bottom:9px;border-bottom:1px dashed var(--border)}
+  .askctx b{color:var(--gold)}
+  .thinking{display:inline-flex;gap:4px;align-items:center;color:var(--dim);font-size:11px}
+  .thinking i{width:5px;height:5px;border-radius:50%;background:var(--dim);
+    animation:blip 1.2s infinite ease-in-out}
+  .thinking i:nth-child(2){animation-delay:.18s}
+  .thinking i:nth-child(3){animation-delay:.36s}
+  @keyframes blip{0%,60%,100%{opacity:.25}30%{opacity:1}}
+  @media(prefers-reduced-motion:reduce){.thinking i{animation:none;opacity:.6}}
+  @media(min-width:900px){
+    .asksheet{inset:auto 18px 18px auto;width:460px;border-radius:16px;
+      border:1px solid var(--border-2);max-height:min(78vh,760px)}
+    .askscrim{background:rgba(0,0,0,.2)}
+  }
+
+  @media print{
+    :root{--page:#fff;--plane:#fff;--card-a:#fff;--card-b:#fff;--card-solid:#fff;--inset:#fafafa;
+      --ink:#000;--ink-2:#222;--muted:#555;--dim:#888;--border:#ddd;--border-2:#bbb;
+      --blue:#14458f;--gold:#7a6220;--good:#0a6b30;--crit:#a02020;--warn:#9a6b06;
+      --bull:#0a6b30;--bear:#a02020;--slot:#7a6220;--track:#eee;--shadow:none}
+    header,.accept,.iconbtn,.askfab,.asksheet,.askscrim{display:none}
+    body{background:#fff;padding:0}
+    .card,.case,.qrow{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hrow">
+    <div class="brand">CIEL <span>· SLEEVE</span></div>
+    <div class="hspace"></div>
+    <button class="iconbtn" id="reviewBtn" title="Reviews" aria-label="Reviews"></button>
+    <button class="iconbtn" id="setBtn" title="Settings" aria-label="Settings"></button>
+    <button class="iconbtn" id="themeBtn" title="Theme" aria-label="Toggle theme"></button>
+  </div>
+  <div class="pills" id="pills"></div>
+</header>
+
+<div class="wrap">
+  <div class="standing">
+    <b>Research prioritisation, not investment advice.</b>
+    Scores rank what to look at next. They are not forecasts of returns, and nothing here is a
+    personalised recommendation within the meaning of FinSA/LSFin.
+  </div>
+
+  <div id="view"></div>
+</div>
+
+<div id="tip"></div>
+
+<button class="askfab" id="askFab" aria-label="Ask about this" aria-expanded="false">Ask</button>
+<div class="askscrim" id="askScrim"></div>
+<div class="asksheet" id="askSheet" role="dialog" aria-modal="true" aria-label="Ask about this company">
+  <div class="askhead">
+    <span class="askic" id="askIc"></span>
+    <div><h3>Ask</h3><div class="sub" id="askWhere">the research queue</div></div>
+    <button class="askx" id="askClose" aria-label="Close"></button>
+  </div>
+  <div class="askbody" id="askBody"></div>
+  <div class="askchips" id="askChips"></div>
+  <form class="askform" id="askForm">
+    <textarea id="askInput" rows="1" placeholder="Ask anything about what is on screen…"
+      autocapitalize="sentences" autocorrect="on" spellcheck="true"></textarea>
+    <button class="asksend" id="askSend" type="submit" aria-label="Send"></button>
+  </form>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(s,r){return (r||document).querySelector(s);};
+  var DATA='data/sleeve/';
+  var STAT={good:'--good',warn:'--warn',serious:'--serious',crit:'--crit',blue:'--blue',gold:'--gold'};
+
+  var ICON={
+    check:'<path d="M20 6 9 17l-5-5"/>',
+    alert:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+    up:'<path d="M7 17 17 7"/><path d="M8 7h9v9"/>',
+    down:'<path d="M7 7 17 17"/><path d="M17 8v9H8"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    go:'<path d="m9 18 6-6-6-6"/>',
+    sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>',
+    search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/>',
+    shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>',
+    scale:'<path d="M12 3v18"/><path d="M5 7h14"/><path d="m5 7-3 7h6Z"/><path d="m19 7-3 7h6Z"/>',
+    book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>',
+    chart:'<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-4 4"/>',
+    info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',
+    filter:'<path d="M3 4h18l-7 8v6l-4 2v-8Z"/>',
+    chat:'<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-4-.9L3 21l2-4a8.4 8.4 0 0 1-1-4 8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 7.4Z"/>',
+    send:'<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/>',
+    close:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    key:'<circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 8.3-8.3"/><path d="m17 6 2.5 2.5"/><path d="m14.5 8.5 2.5 2.5"/>'
+  };
+  function svg(n,c){return '<svg '+(c?'class="'+c+'" ':'')+'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(ICON[n]||'')+'</svg>';}
+  function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+  /* ── FORMAT ─────────────────────────────────────────── */
+  function money(v){
+    if(v==null||isNaN(v))return '—';
+    var a=Math.abs(v),s=v<0?'-':'';
+    if(a>=1e9)return s+'$'+(a/1e9).toFixed(1)+'bn';
+    if(a>=1e6)return s+'$'+(a/1e6).toFixed(1)+'m';
+    if(a>=1e3)return s+'$'+(a/1e3).toFixed(0)+'k';
+    return s+'$'+a.toFixed(0);
+  }
+  function pct(v,d){return v==null||isNaN(v)?'—':(v*100).toFixed(d==null?1:d)+'%';}
+
+  /* Size, not valuation. EntityPublicFloat is filed annually on the 10-K cover
+     as of the prior June, so it is a band with a date attached - never a
+     current market capitalisation and never an input to the score. */
+  function sizeBand(v){
+    if(!v)return '';
+    var label=v>=1e10?'mega':(v>=2e9?'large':(v>=3e8?'mid':'small'));
+    return '<span data-tip="Size band|Public float '+money(v)+
+      '. Filed annually on the 10-K cover, as of the prior June — a size indicator, '+
+      'not a current valuation.">'+label+' cap</span>';
+  }
+  function num(v,d){return v==null||isNaN(v)?'—':v.toFixed(d==null?0:d);}
+
+  /* ── STATE ──────────────────────────────────────────── */
+  var M=null, L=null, POS=null, CHARTER=null, COSTS=null;
+  var PKEY='ciel-sleeve-positions', QKEY='ciel-sleeve-queue', GKEY='ciel-sleeve-gh';
+  function loadPos(){try{return JSON.parse(localStorage.getItem(PKEY)||'{}');}catch(e){return {};}}
+  function savePos(){try{localStorage.setItem(PKEY,JSON.stringify(POS));}catch(e){}}
+  POS=loadPos();
+
+  /* ── GITHUB WRITE-BACK ──────────────────────────────
+     Every accept becomes a commit, so the record is versioned, timestamped by
+     git, readable from any device and survives a wiped phone. The token is
+     fine-grained and scoped to contents:write on this one repository — that is
+     the entire blast radius if the device is lost. */
+  function ghConfig(){try{return JSON.parse(localStorage.getItem(GKEY)||'null');}catch(e){return null;}}
+  function ghSave(c){try{localStorage.setItem(GKEY,JSON.stringify(c));}catch(e){}}
+
+  function b64(str){
+    return btoa(String.fromCharCode.apply(null,new TextEncoder().encode(str)));
+  }
+  function ghPut(path,payload,message){
+    var cfg=ghConfig();
+    if(!cfg||!cfg.token||!cfg.repo)return Promise.resolve({skipped:true});
+    var api='https://api.github.com/repos/'+cfg.repo+'/contents/'+path;
+    var hdr={'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'};
+    // Read the current blob sha first so a concurrent edit 409s instead of
+    // being silently clobbered.
+    return fetch(api,{headers:hdr})
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(existing){
+        var body={message:message,content:b64(JSON.stringify(payload,null,2))};
+        if(existing&&existing.sha)body.sha=existing.sha;
+        return fetch(api,{method:'PUT',headers:hdr,body:JSON.stringify(body)});
+      })
+      .then(function(r){
+        if(r.status===409)return {conflict:true};
+        if(!r.ok)return r.json().then(function(e){throw new Error(e.message||r.status);});
+        return {ok:true};
+      });
+  }
+  function queuePending(item){
+    var q;try{q=JSON.parse(localStorage.getItem(QKEY)||'[]');}catch(e){q=[];}
+    q.push(item);try{localStorage.setItem(QKEY,JSON.stringify(q));}catch(e){}
+  }
+  function pendingCount(){
+    try{return JSON.parse(localStorage.getItem(QKEY)||'[]').length;}catch(e){return 0;}
+  }
+  function flushPending(){
+    var q;try{q=JSON.parse(localStorage.getItem(QKEY)||'[]');}catch(e){return;}
+    if(!q.length||!ghConfig())return;
+    var next=q.shift();
+    ghPut(next.path,next.payload,next.message).then(function(res){
+      if(res&&(res.ok||res.skipped)){
+        try{localStorage.setItem(QKEY,JSON.stringify(q));}catch(e){}
+        if(q.length)flushPending();
+      }
+    }).catch(function(){});
+  }
+
+  /* ── COST GATE (dossier 4.3 / 4.4) ──────────────────── */
+  function orderCost(amountChf,foreign){
+    var c=COSTS||{stamp_duty_swiss:0.00075,stamp_duty_foreign:0.0015,
+      brokerage_flat_chf:9,fx_spread_pct:0.005,max_total_cost_pct:0.005,min_order_chf:500};
+    var stamp=amountChf*(foreign?c.stamp_duty_foreign:c.stamp_duty_swiss);
+    var fx=foreign?amountChf*c.fx_spread_pct:0;
+    var total=stamp+fx+c.brokerage_flat_chf;
+    return {total:total,pct:total/amountChf,limit:c.max_total_cost_pct,
+            // Smallest order where flat brokerage stops dominating the ratio.
+            minClearing:Math.ceil(c.brokerage_flat_chf/
+              (c.max_total_cost_pct-(foreign?c.stamp_duty_foreign+c.fx_spread_pct:c.stamp_duty_swiss))/50)*50};
+  }
+
+  /* ── THEME ──────────────────────────────────────────── */
+  var TKEY='ciel-sleeve-theme',root=document.documentElement,tbtn=$('#themeBtn');
+  function curTheme(){return root.getAttribute('data-theme')||
+    ((window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark');}
+  function updBtn(){var t=curTheme();if(tbtn){tbtn.innerHTML=svg(t==='dark'?'sun':'moon');
+    tbtn.setAttribute('aria-pressed',t==='dark');}}
+  function setTheme(t){root.setAttribute('data-theme',t);updBtn();renderCharts();}
+  try{var st=localStorage.getItem(TKEY);if(st==='light'||st==='dark')root.setAttribute('data-theme',st);}catch(e){}
+  updBtn();
+  if(tbtn)tbtn.addEventListener('click',function(){
+    var n=curTheme()==='dark'?'light':'dark';
+    try{localStorage.setItem(TKEY,n);}catch(e){} setTheme(n);});
+  $('#reviewBtn').innerHTML=svg('book');
+  $('#reviewBtn').addEventListener('click',function(){location.hash='#/review';});
+  $('#setBtn').innerHTML=svg('shield');
+  $('#setBtn').addEventListener('click',function(){location.hash='#/settings';});
+
+  /* ── TOOLTIP ────────────────────────────────────────── */
+  var tip=$('#tip');
+  function showTip(html,x,y){
+    tip.innerHTML=html;tip.classList.add('on');
+    var r=tip.getBoundingClientRect(),nx=x+14,ny=y+14;
+    if(nx+r.width>innerWidth-8)nx=x-r.width-14;
+    if(ny+r.height>innerHeight-8)ny=y-r.height-14;
+    tip.style.left=Math.max(8,nx)+'px';tip.style.top=Math.max(8,ny)+'px';
+  }
+  function hideTip(){tip.classList.remove('on');}
+  document.addEventListener('mouseover',function(e){
+    var el=e.target.closest('[data-tip]');if(!el)return;
+    var parts=el.getAttribute('data-tip').split('|');
+    showTip(parts.map(function(p,i){return i===0?'<b>'+esc(p)+'</b>':'<span class="tk">'+esc(p)+'</span>';}).join('<br>'),e.clientX,e.clientY);
+  });
+  document.addEventListener('mouseout',function(e){
+    var el=e.target.closest('[data-tip]');if(el&&!el.contains(e.relatedTarget))hideTip();});
+
+  /* ── CHARTS ─────────────────────────────────────────
+     Every SVG is drawn in here and reads its colours from CSS vars at
+     call time, because setTheme() re-invokes this. Anything drawn once
+     at load disappears on the first theme toggle. */
+  function renderCharts(){
+    document.querySelectorAll('svg.spark').forEach(function(el){
+      var raw=el.getAttribute('data-spark');if(!raw)return;
+      var vals=raw.split(',').map(parseFloat).filter(function(v){return !isNaN(v);});
+      if(vals.length<2){el.innerHTML='';return;}
+      var w=el.clientWidth||160,h=el.clientHeight||30,p=2;
+      var min=Math.min.apply(null,vals),max=Math.max.apply(null,vals);
+      var span=(max-min)||Math.abs(max)||1;
+      var col=css('--c-'+(el.getAttribute('data-color')||'blue'))||css('--c-blue');
+      var pts=vals.map(function(v,i){
+        var x=p+i*(w-2*p)/(vals.length-1);
+        var y=h-p-((v-min)/span)*(h-2*p);
+        return x.toFixed(1)+','+y.toFixed(1);
+      });
+      var last=pts[pts.length-1].split(',');
+      el.setAttribute('viewBox','0 0 '+w+' '+h);
+      el.innerHTML='<polyline fill="none" stroke="'+col+'" stroke-width="1.6" '+
+        'stroke-linejoin="round" stroke-linecap="round" points="'+pts.join(' ')+'"/>'+
+        '<circle cx="'+last[0]+'" cy="'+last[1]+'" r="2.1" fill="'+col+'"/>';
+    });
+
+    document.querySelectorAll('svg.waterfall').forEach(function(el){
+      var data;try{data=JSON.parse(el.getAttribute('data-wf'));}catch(e){return;}
+      if(!data||!data.length){el.innerHTML='';return;}
+      var w=el.clientWidth||320,rowH=26,h=data.length*rowH+6;
+      var max=Math.max.apply(null,data.map(function(d){return Math.abs(d.v);}))||1;
+      var labelW=Math.min(120,Math.max(80,w*0.34));
+      var barW=w-labelW-46;
+      var out='';
+      data.forEach(function(d,i){
+        var y=i*rowH+4,len=Math.max(2,Math.abs(d.v)/max*barW);
+        var col=css('--c-'+(d.c||'blue'))||css('--c-blue');
+        out+='<text x="0" y="'+(y+12)+'" fill="'+css('--ink-2')+'" font-size="10.5" font-family="Inter">'+esc(d.k)+'</text>';
+        out+='<rect x="'+labelW+'" y="'+(y+3)+'" width="'+len.toFixed(1)+'" height="11" rx="2.5" fill="'+col+'"/>';
+        out+='<text x="'+(labelW+len+6)+'" y="'+(y+12)+'" fill="'+css('--muted')+'" font-size="10" font-family="JetBrains Mono">'+
+          (d.v>=0?'+':'')+d.v.toFixed(1)+'</text>';
+      });
+      el.setAttribute('viewBox','0 0 '+w+' '+h);
+      el.style.height=h+'px';
+      el.innerHTML=out;
+    });
+  }
+  window.addEventListener('resize',function(){clearTimeout(window._rt);
+    window._rt=setTimeout(renderCharts,150);});
+
+  function hydrate(){
+    document.querySelectorAll('[data-ic]').forEach(function(el){
+      if(!el.querySelector('svg'))el.insertAdjacentHTML('afterbegin',svg(el.getAttribute('data-ic')));
+    });
+    document.querySelectorAll('.dims i[data-w]').forEach(function(i){
+      i.style.setProperty('--w',i.getAttribute('data-w')+'%');
+      i.style.setProperty('--c','var('+(STAT[i.getAttribute('data-c')]||'--blue')+')');
+    });
+    var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var els=document.querySelectorAll('.reveal:not(.in)');
+    if(reduce||!('IntersectionObserver' in window)){
+      els.forEach(function(e){e.classList.add('in');});
+    }else{
+      var io=new IntersectionObserver(function(entries){
+        entries.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});
+      },{threshold:.08});
+      els.forEach(function(e){io.observe(e);});
+    }
+    renderCharts();
+  }
+
+  /* ── FRESHNESS ──────────────────────────────────────── */
+  function daysSince(iso){
+    if(!iso)return null;
+    var t=Date.parse(iso);if(isNaN(t))return null;
+    return Math.floor((Date.now()-t)/86400000);
+  }
+  function renderPills(){
+    if(!M){$('#pills').innerHTML='';return;}
+    var age=daysSince(M.generated_at);
+    var cls=age==null?'':(age>200?'crit':(age>100?'warn':'good'));
+    var srcOk=(M.sources||[]).filter(function(s){return s.status==='ok';}).length;
+    var srcBad=(M.sources||[]).filter(function(s){return s.status==='degraded';}).length;
+    var h='';
+    h+='<span class="pill gold" data-tip="Cohort|The quarter this scan belongs to">'+esc(M.cohort||'—')+'</span>';
+    h+='<span class="pill '+cls+'" data-ic="clock" data-tip="Last scan|'+
+       (age==null?'unknown':age+' days ago')+'. Past 100 days this turns amber, past 200 red — a quarterly tool that gets forgotten should say so.">'+
+       (age==null?'—':age+'d ago')+'</span>';
+    h+='<span class="pill" data-tip="Universe|Companies examined in this scan">'+
+       ((M.counts&&M.counts.examined)||0)+' examined</span>';
+    h+='<span class="pill '+(srcBad?'warn':'')+'" data-tip="Data sources|'+
+       srcOk+' healthy, '+srcBad+' degraded">'+srcOk+' ok'+(srcBad?' · '+srcBad+' degraded':'')+'</span>';
+    h+='<span class="pill" data-tip="Rubric|The scoring configuration that produced these ranks">rubric '+
+       esc(M.rubric_version||'—')+'</span>';
+    $('#pills').innerHTML=h;
+  }
+
+  /* ── CHARTER BAND ───────────────────────────────────── */
+  function viewingWindow(){
+    var n=new Date(),m=n.getMonth();
+    return (m===5||m===11);
+  }
+  /* A compact strip, not three full-height cards. The charter context matters,
+     but making you scroll two thousand pixels past it to reach the first
+     company is how a tool stops getting opened. Detail is one tap away and the
+     base rates still sit on the page, below the queue. */
+  function charterBand(){
+    var held=Object.keys(POS);
+    var open=viewingWindow();
+    var slots='';
+    for(var i=0;i<4;i++){
+      var slug=held[i];
+      slots+=slug
+        ? '<span class="chip filled" data-tip="'+esc(POS[slug].name||slug)+'|confidence '+
+            esc(POS[slug].confidence||'—')+'/5">'+esc((POS[slug].ticker||POS[slug].name||'').slice(0,6))+'</span>'
+        : '<span class="chip">·</span>';
+    }
+    return '<div class="strip reveal">'+
+      '<button class="strip-main" id="stripBtn" aria-expanded="false">'+
+        '<span class="chips">'+slots+'</span>'+
+        '<span class="strip-txt"><b>'+held.length+' of 4</b> slots · '+
+          '<span style="color:var('+(open?'--good':'--warn')+')">window '+(open?'open':'closed')+'</span></span>'+
+        '<span class="strip-go">'+svg('go')+'</span>'+
+      '</button>'+
+      '<div class="strip-more" id="stripMore" hidden>'+
+        '<p class="sub" style="line-height:1.55">Charter rule 5 caps this sleeve at 10% of the portfolio '+
+        'and at two to four companies. A fifth requires clearing one first.</p>'+
+        '<p class="sub" style="line-height:1.55;margin-top:7px">'+
+        (open?'Rule 2: this is one of the two months you look — end of June and end of December.'
+             :'Rule 2: the positions view is out of reach until end of June or end of December. '+
+              'Research stays open all year; the objection is to watching your P&amp;L, not to working.')+
+        ' <i>Benartzi &amp; Thaler, QJE 1995.</i></p>'+
+      '</div>'+
+    '</div>';
+  }
+
+  function baseRateSection(){
+    return '<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('scale')+'</span>'+
+      '<div><h2>The base rate</h2><p>What the odds are before you start</p></div>'+
+      '<div class="line"></div></div>'+
+      '<div class="card reveal">'+baseRates()+'</div></section>';
+  }
+  function baseRates(){
+    var rates=(L&&L.base_rates)||[];
+    if(!rates.length)return '<p class="sub">—</p>';
+    return '<div class="baserate">'+rates.map(function(r){
+      return '<p>'+esc(r.text)+'<cite>'+esc(r.source)+'</cite></p>';
+    }).join('')+'</div>';
+  }
+
+  /* ── QUEUE ──────────────────────────────────────────── */
+  var DIMS=[['team','Team','gold'],['quality','Quality','blue'],['safety','Safety','good'],
+            ['explainability','Clarity','warn'],['coverage','Coverage','crit']];
+
+  function queueRow(c){
+    var dims=DIMS.map(function(d){
+      var v=(c.dimensions&&c.dimensions[d[0]])||0;
+      var wMax={team:30,quality:25,safety:20,explainability:10,coverage:15}[d[0]]||20;
+      return '<i data-w="'+Math.min(100,v/wMax*100).toFixed(0)+'" data-c="'+d[2]+
+             '" data-tip="'+d[1]+'|'+v.toFixed(1)+' of '+wMax+' points"></i>';
+    }).join('');
+    var meta=[];
+    if(c.ticker)meta.push('<b class="mono">'+esc(c.ticker)+'</b>');
+    if(c.listed_years!=null)meta.push('listed '+num(c.listed_years,1)+'y');
+    if(c.revenue_growth!=null)meta.push('rev '+(c.revenue_growth>=0?'+':'')+pct(c.revenue_growth,0));
+    if(c.gross_margin!=null)meta.push('gm '+pct(c.gross_margin,0));
+    if(c.public_float)meta.push(sizeBand(c.public_float));
+    if(c.cash_flow_positive)meta.push('<span style="color:var(--good)">cash generative</span>');
+    else if(c.runway_months!=null)meta.push('<span style="color:'+
+      (c.runway_months<24?'var(--warn)':'var(--muted)')+'">'+num(c.runway_months)+'mo runway</span>');
+    var flags=(c.flags||[]).map(function(f){return '<span class="flag">'+esc(f)+'</span>';}).join('');
+    // DOM order matters: on desktop these six children flow into a five-column
+    // grid, so dims must sit between the name and the sparkline or it lands in
+    // the 34px rank column and renders as unreadable dots.
+    return '<button class="qrow reveal" data-slug="'+esc(c.slug)+'">'+
+      '<div class="qrank tnum">'+c.rank+'</div>'+
+      '<div class="qtitle"><div class="qname">'+esc(c.name)+'</div>'+
+      '<div class="qmeta">'+meta.join('<span>·</span>')+'</div></div>'+
+      '<div class="qscore"><b class="tnum">'+num(c.score,1)+'</b><span>PRIORITY</span></div>'+
+      '<div class="dims">'+dims+'</div>'+
+      '<svg class="spark qspark" data-spark="'+(c.spark_revenue||[]).join(',')+'" data-color="blue" '+
+        'style="width:100%;height:22px" aria-label="Revenue trend"></svg>'+
+      (flags?'<div class="qflags">'+flags+'</div>':'')+
+    '</button>';
+  }
+
+  function renderQueue(){
+    if(!L){return '';}
+    var el=L.eliminated||{};
+    var h='';
+    h+='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('filter')+'</span>'+
+       '<div><h2>Research queue</h2><p>Eliminated first, ranked second</p></div><div class="line"></div></div>';
+    h+='<div class="card reveal" style="margin-bottom:12px">'+
+       '<div class="elim">'+
+       '<div><div class="n tnum">'+(el.examined||0)+'</div><div class="lbl">EXAMINED</div></div>'+
+       '<div><div class="n out tnum">'+(el.total||0)+'</div><div class="lbl">ELIMINATED</div></div>'+
+       '<div><div class="n in tnum">'+((L.companies||[]).length)+'</div><div class="lbl">SURVIVE</div></div>'+
+       '<div style="flex:1"></div><button id="whyBtn">Why were they eliminated?</button></div>'+
+       '<p class="sub" style="line-height:1.55">Ellis, <i>The Loser\'s Game</i> (1975): between amateurs, points are '+
+       'lost through unforced errors rather than won. So this cuts first and ranks what is left.</p>'+
+       '<div id="whyBox" hidden style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">'+
+       Object.keys(el.by_reason||{}).map(function(k){
+         return '<div style="display:flex;justify-content:space-between;gap:12px;font-size:11px;padding:4px 0">'+
+           '<span style="color:var(--ink-2)">'+esc(k)+'</span>'+
+           '<b class="mono tnum">'+el.by_reason[k]+'</b></div>';
+       }).join('')+'</div></div>';
+    h+=(L.companies||[]).map(queueRow).join('');
+    if(!(L.companies||[]).length)h+='<div class="empty"><b>Nothing survived this scan.</b>'+
+      'Either the filters are too strict or the data did not load.</div>';
+    h+='</section>';
+    return h;
+  }
+
+  /* ── DOSSIER ────────────────────────────────────────── */
+  function caseList(items,kind){
+    if(!items||!items.length){
+      return '<li style="color:var(--muted)">Nothing generated'+
+        (kind==='bear'?' — which is itself suspicious. Treat as missing data, not as a clean bill of health.':'')+'.</li>';
+    }
+    return items.map(function(e){
+      return '<li>'+esc(e.text)+
+        (e.source_url?' <a href="'+esc(e.source_url)+'" target="_blank" rel="noopener">filing</a>':'')+'</li>';
+    }).join('');
+  }
+
+  function triggerCard(t,i){
+    return '<div class="trig'+(t.fired?' fired':'')+'" data-i="'+i+'">'+
+      '<div class="trig-top"><div class="trig-lab">'+esc(t.label)+
+        (t.fired?' <span class="flag">FIRED</span>':'')+'</div>'+
+        '<div class="trig-now">now '+esc(t.current_display||'—')+'</div></div>'+
+      '<div class="trig-why">'+esc(t.rationale||'')+'</div>'+
+    '</div>';
+  }
+
+  function renderDossier(d){
+    var score=d.score||{};
+    var wf=(score.contributions||[]).slice().sort(function(a,b){return b.points-a.points;})
+      .slice(0,8).map(function(c){
+        return {k:c.label,v:c.points,c:{team:'gold',quality:'blue',safety:'good',
+          explainability:'warn',coverage:'crit'}[c.dimension]||'blue'};
+      });
+    (score.penalties||[]).forEach(function(p){wf.push({k:p.label,v:p.points,c:'crit'});});
+
+    var meta=[];
+    if(d.ticker)meta.push('<b class="mono">'+esc(d.ticker)+'</b>');
+    if(d.exchanges&&d.exchanges.length)meta.push(esc(d.exchanges.join(', ')));
+    if(d.sector)meta.push(esc(d.sector));
+    if(d.listed_years!=null)meta.push('listed '+num(d.listed_years,1)+' years');
+    if(d.country)meta.push(esc(d.country));
+
+    var held=POS[d.slug];
+    var full=Object.keys(POS).length>=4&&!held;
+    var sum=(d.summary&&d.summary.sentences)||[];
+
+    var h='';
+    h+='<a class="back" href="#/">'+svg('go')+' Research queue</a>';
+    h+='<div class="dhead"><h1>'+esc(d.name)+'</h1><div class="qmeta">'+meta.join('<span>·</span>')+'</div></div>';
+
+    h+='<div class="summary reveal">'+sum.map(function(s){return '<p>'+esc(s)+'</p>';}).join('')+
+       '<div class="note">'+esc((d.summary&&d.summary.note)||'')+'</div></div>';
+
+    /* ── THE IDEA — the company in its own words, from the 10-K ── */
+    var nar=d.narrative||{};
+    if(nar.business){
+      h+='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('book')+'</span>'+
+        '<div><h2>The idea</h2><p>From Item 1 of the annual report</p></div><div class="line"></div></div>'+
+        '<div class="card reveal"><p style="font-size:12.5px;line-height:1.7;color:var(--ink)">'+
+        esc(nar.business)+'</p>'+
+        '<p class="sub" style="margin-top:10px">Quoted from the '+esc(nar.source_form||'10-K')+
+        ' filed '+esc(nar.source_date||'')+'. '+
+        (nar.source_url?'<a href="'+esc(nar.source_url)+'" target="_blank" rel="noopener">Read the filing ↗</a>':'')+
+        '</p></div></section>';
+    }
+
+    /* ── QUARTERLY REVIEWS ── */
+    if((d.quarterly||[]).length){
+      h+='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('chart')+'</span>'+
+        '<div><h2>Quarter by quarter</h2><p>Revenue, margin, cash — each linked to its filing</p></div>'+
+        '<div class="line"></div></div><div class="card reveal" style="padding:4px 0">'+
+        '<div class="qtable"><div class="qhead">'+
+          '<span>Period</span><span>Revenue</span><span>YoY</span><span>Margin</span><span>Op. cash</span><span></span>'+
+        '</div>'+
+        d.quarterly.map(function(r){
+          return '<div class="qline">'+
+            '<span class="mono">'+esc(r.period)+'</span>'+
+            '<span class="tnum">'+money(r.revenue)+'</span>'+
+            '<span class="tnum" style="color:'+(r.growth==null?'var(--muted)':
+              (r.growth>=0?'var(--good)':'var(--crit)'))+'">'+
+              (r.growth==null?'—':(r.growth>=0?'+':'')+pct(r.growth,0))+'</span>'+
+            '<span class="tnum">'+(r.gross_margin==null?'—':pct(r.gross_margin,0))+'</span>'+
+            '<span class="tnum">'+(r.operating_cash_flow==null?'—':money(r.operating_cash_flow))+'</span>'+
+            '<span>'+(r.url?'<a href="'+esc(r.url)+'" target="_blank" rel="noopener">↗</a>':'')+'</span>'+
+          '</div>';
+        }).join('')+'</div></div></section>';
+    }
+
+    /* ── STORY: how it listed and how it has raised ── */
+    if((d.story||[]).length){
+      h+='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('clock')+'</span>'+
+        '<div><h2>The story</h2><p>Listing and funding, from the filing record</p></div>'+
+        '<div class="line"></div></div><div class="card reveal">'+
+        d.story.slice().reverse().map(function(e){
+          return '<a class="tl" href="'+esc(e.url)+'" target="_blank" rel="noopener">'+
+            '<span class="tl-d mono">'+esc(e.date)+'</span>'+
+            '<span class="tl-b" data-k="'+esc(e.kind)+'"></span>'+
+            '<span class="tl-t">'+esc(e.label)+'<span class="sub"> · '+esc(e.form)+'</span></span></a>';
+        }).join('')+'</div></section>';
+    }
+
+    /* ── MATERIAL EVENTS — the official news feed ── */
+    if((d.events||[]).length){
+      h+='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('alert')+'</span>'+
+        '<div><h2>What has happened</h2><p>8-K material events, filed within four business days</p></div>'+
+        '<div class="line"></div></div><div class="card reveal">'+
+        d.events.map(function(e){
+          return '<a class="tl" href="'+esc(e.url)+'" target="_blank" rel="noopener">'+
+            '<span class="tl-d mono">'+esc(e.date)+'</span>'+
+            '<span class="tl-b" data-t="'+esc(e.events[0].tone)+'"></span>'+
+            '<span class="tl-t">'+e.events.map(function(x){return esc(x.label);}).join(' · ')+'</span></a>';
+        }).join('')+
+        '<p class="sub" style="margin-top:10px;line-height:1.55">A company must file an 8-K within '+
+        'four business days of a material event, so this is the fastest and most reliable record '+
+        'there is — earlier than press coverage, and legally binding. It is what happened, not what '+
+        'anyone said about it.</p></div></section>';
+    }
+
+    /* ── LEGAL ── */
+    var legalText=nar.legal,legalEvents=d.legal_events||[];
+    if(legalText||legalEvents.length){
+      var material=nar.legal_material;
+      h+='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('shield')+'</span>'+
+        '<div><h2>Legal</h2><p>Item 3 of the annual report, plus material filings</p></div>'+
+        '<div class="line"></div></div><div class="card reveal"'+
+        (material?' style="border-left:3px solid var(--warn)"':'')+'>'+
+        (legalText?'<p style="font-size:12px;line-height:1.65;color:var(--ink-2)">'+esc(legalText)+'</p>':'')+
+        (legalEvents.length?'<div style="margin-top:10px">'+legalEvents.map(function(e){
+          return '<a class="tl" href="'+esc(e.url)+'" target="_blank" rel="noopener">'+
+            '<span class="tl-d mono">'+esc(e.date)+'</span>'+
+            '<span class="tl-b" data-t="'+esc(e.tone)+'"></span>'+
+            '<span class="tl-t">'+esc(e.label)+'</span></a>';
+        }).join('')+'</div>':'')+
+        '<p class="sub" style="margin-top:10px;line-height:1.55">'+
+        (material===false?'The company states it is not party to material proceedings. '
+                         :'There is disclosed litigation here. ')+
+        'This points at what to read; it is not a judgement about any case, and the tool cannot '+
+        'make one.</p></div></section>';
+    }
+
+    var mm=d.metrics||{};
+    h+='<div class="card reveal" style="margin-top:10px"><h3>Size, and what is missing</h3>'+
+      '<div style="display:flex;gap:18px;flex-wrap:wrap">'+
+      (mm.public_float?'<div><b class="tnum" style="font-size:16px">'+money(mm.public_float)+'</b>'+
+        '<div class="sub">public float, as of '+esc(mm.public_float_asof||'—')+'</div></div>':'')+
+      (mm.revenue_ttm?'<div><b class="tnum" style="font-size:16px">'+money(mm.revenue_ttm)+'</b>'+
+        '<div class="sub">revenue, trailing year</div></div>':'')+
+      '</div>'+
+      '<p class="sub" style="margin-top:9px;line-height:1.55"><b>There is no current price here, '+
+      'and therefore no valuation.</b> Public float is filed once a year on the 10-K cover, stated '+
+      'as of the prior June, so it is a size band and nothing more. Free live-price sources are '+
+      'either gone or behind bot challenges. Whether this company is cheap is a question this tool '+
+      'does not answer — check the price yourself before it matters.</p></div>';
+
+    h+='<div class="cases">'+
+       '<div class="case bull reveal"><h3>'+svg('up')+'Why this could work</h3><ul>'+
+         caseList(d.bull,'bull')+'</ul></div>'+
+       '<div class="case bear reveal"><h3>'+svg('down')+'Why this could fail</h3><ul>'+
+         caseList(d.bear,'bear')+'</ul></div>'+
+       '</div>';
+
+    h+='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('scale')+'</span>'+
+       '<div><h2>Where the score comes from</h2><p>Every point, with the filing behind it</p></div>'+
+       '<div class="line"></div></div>'+
+       '<div class="card reveal"><svg class="waterfall" data-wf=\''+
+       JSON.stringify(wf).replace(/'/g,'&#39;')+'\' style="width:100%"></svg>'+
+       '<p class="sub" style="margin-top:9px">Total '+num(score.total,1)+
+       ' · rubric '+esc(score.rubric_version||'')+'</p></div></section>';
+
+    h+='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('alert')+'</span>'+
+       '<div><h2>What would make me sell</h2><p>Quantified, and checked on every scan</p></div>'+
+       '<div class="line"></div></div>'+
+       '<div class="card reveal">'+(d.triggers||[]).map(triggerCard).join('')+
+       '<p class="sub" style="line-height:1.55;margin-top:4px">Thresholds are derived from this '+
+       'company\'s own current figures, so they are calibrated rather than generic. Every one is a '+
+       'machine-checkable predicate, which is why the weekly scan can re-test them against each new '+
+       'filing. The tool never tells you what to do — it tells you what you said you would do.</p>'+
+       '</div></section>';
+
+    if(d.team&&d.team.length){
+      var m=d.metrics||{};
+      var own=m.insider_ownership,sell=m.insider_selling;
+      h+='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('users')+'</span>'+
+        '<div><h2>The team</h2><p>Named in their own ownership filings</p></div><div class="line"></div></div>'+
+        '<div class="card reveal">'+
+        '<div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:11px">'+
+          '<div><b class="tnum" style="font-size:17px;color:'+
+            (own>=0.05?'var(--good)':'var(--muted)')+'">'+pct(own)+'</b>'+
+            '<div class="sub">held by insiders</div></div>'+
+          '<div><b class="tnum" style="font-size:17px;color:'+
+            (sell>0.10?'var(--crit)':(sell>0.03?'var(--warn)':'var(--good)'))+'">'+pct(sell)+'</b>'+
+            '<div class="sub">sold in 4 quarters</div></div>'+
+          '<div><b class="tnum" style="font-size:17px">'+(m.insider_filings_read||0)+'</b>'+
+            '<div class="sub">filings read</div></div>'+
+        '</div>'+
+        d.team.map(function(p){
+          var sold=p.sold_in_window||0,bought=p.bought_in_window||0;
+          var tag=bought>sold?'<span style="color:var(--good)">bought</span>':
+                  (sold>0?'<span style="color:var(--crit)">sold '+
+                    Math.round(sold).toLocaleString()+'</span>':'<span class="sub">no trades</span>');
+          return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;'+
+            'padding:8px 0;border-top:1px solid var(--border)">'+
+            '<div style="min-width:0"><b style="font-size:12px">'+esc(p.raw_name||'')+'</b>'+
+            '<div class="sub" style="margin-top:1px">'+esc(p.title_filed||p.role||'')+'</div></div>'+
+            '<div style="text-align:right;white-space:nowrap;font-size:10.5px">'+
+            (p.shares?'<span class="mono tnum">'+Math.round(p.shares).toLocaleString()+'</span> sh<br>':'')+
+            tag+'</div></div>';
+        }).join('')+
+        '<p class="sub" style="margin-top:11px;line-height:1.55">'+esc(d.team_note||'')+'</p></div></section>';
+    }else{
+      h+='<section class="zone"><div class="card reveal" style="border-left:3px solid var(--warn)">'+
+        '<h3>No team history available</h3><p class="sub" style="line-height:1.6">'+
+        'Officer history could not be reconstructed for this company from public filings. The thing '+
+        'that matters most is the thing we know least about here — weigh the rest accordingly.</p></div></section>';
+    }
+
+    // Cost gate: dossier 4.4 puts the bar at total costs below 0.5% of the
+    // amount invested, with CHF 500-1,000 minimum orders. Foreign stamp duty is
+    // double the Swiss rate and an FX leg applies.
+    var foreign=!(d.exchanges||[]).some(function(x){return /six|swiss/i.test(x);});
+    var cost=orderCost(COSTS?COSTS.recommended_order_chf:1000,foreign);
+    h+='<div class="card reveal" style="margin-top:14px"><h3>What an order would cost</h3>'+
+      '<div style="display:flex;gap:18px;flex-wrap:wrap">'+
+        '<div><b class="tnum" style="font-size:16px">CHF '+num(cost.total,2)+'</b>'+
+          '<div class="sub">on a CHF '+(COSTS?COSTS.recommended_order_chf:1000)+' order</div></div>'+
+        '<div><b class="tnum" style="font-size:16px;color:'+
+          (cost.pct<=cost.limit?'var(--good)':'var(--crit)')+'">'+pct(cost.pct,2)+'</b>'+
+          '<div class="sub">of the amount, limit '+pct(cost.limit,1)+'</div></div>'+
+      '</div>'+
+      '<p class="sub" style="margin-top:9px;line-height:1.55">'+
+      (foreign?'Foreign security: 0.15% stamp duty plus an FX leg.'
+             :'Swiss security: 0.075% stamp duty, no FX leg.')+
+      (cost.pct>cost.limit?' <b style="color:var(--crit)">Above the 0.5% bar — an order of about CHF '+
+        cost.minClearing+' would clear it.</b>':'')+
+      '</p></div>';
+
+    h+='<div class="accept">'+
+      '<div class="conf" id="conf">'+[1,2,3,4,5].map(function(n){
+        return '<button data-c="'+n+'" aria-pressed="'+(held&&held.confidence===n?'true':'false')+'">'+n+'</button>';
+      }).join('')+'</div>'+
+      '<button class="btn-primary" id="acceptBtn"'+(full?' disabled':'')+'>'+
+        (held?'Update this position':'Accept into the sleeve')+'</button>'+
+      (full?'<div class="blocked">All four slots are taken. Charter rule 5 caps the sleeve at four '+
+        'companies — clear one before adding another.</div>':
+        '<div class="blocked" id="confWarn" hidden>Set a confidence level first. A judgement with no '+
+        'confidence attached cannot be scored later.</div>')+
+      '</div>';
+    return h;
+  }
+
+  /* ── REVIEW ─────────────────────────────────────────
+     Pre-computed from what was stored at accept time against what the latest
+     scan reports. Nothing to type. */
+  function livePosition(slug){
+    return ((L&&L.companies)||[]).filter(function(c){return c.slug===slug;})[0]||null;
+  }
+  function checkTriggers(pos){
+    var live=livePosition(pos.slug);
+    if(!live)return {fired:[],near:[],stale:true};
+    // Map the queue row back onto the metric names the triggers reference.
+    var now={gross_margin:live.gross_margin,revenue_growth_yoy:live.revenue_growth,
+      dilution_yoy:live.dilution,runway_months:live.cash_flow_positive?999:live.runway_months};
+    var fired=[],near=[];
+    (pos.triggers||[]).forEach(function(t){
+      var v=now[t.metric];
+      if(v==null||t.comparison==='is_true')return;
+      var hit=t.comparison==='below'?v<t.threshold:v>t.threshold;
+      var margin=t.threshold?Math.abs(v-t.threshold)/Math.abs(t.threshold):1;
+      if(hit)fired.push({t:t,v:v});
+      else if(margin<0.2)near.push({t:t,v:v,margin:margin});
+    });
+    return {fired:fired,near:near,stale:false,live:live};
+  }
+  function fmtMetric(metric,v){
+    if(v==null)return '—';
+    if(metric==='runway_months')return num(v)+' months';
+    return pct(v);
+  }
+
+  function renderReview(){
+    var held=Object.keys(POS);
+    var h='<a class="back" href="#/">'+svg('go')+' Research queue</a>';
+    h+='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('book')+'</span>'+
+       '<div><h2>Review</h2><p>Pre-computed. Nothing to fill in.</p></div><div class="line"></div></div>';
+    if(!held.length){
+      h+='<div class="card reveal"><p class="sub" style="line-height:1.6">No positions yet. Once you '+
+        'accept a company, this page reports what changed in its filings each quarter, how close each '+
+        'sell trigger is to firing, and — annually — the sleeve against the core with costs included, '+
+        'plus what the app argued at the time against what actually happened.</p></div>';
+    }else{
+      held.forEach(function(s){
+        var p=POS[s],state=checkTriggers(p);
+        var days=Math.floor((Date.now()-Date.parse(p.accepted_at||''))/86400000);
+        h+='<div class="card reveal" style="margin-bottom:10px'+
+          (state.fired.length?';border-left:3px solid var(--crit)':'')+'">'+
+          '<h3>'+esc(p.name||s)+(p.ticker?' <span class="mono sub">'+esc(p.ticker)+'</span>':'')+'</h3>'+
+          '<div class="sub">accepted '+esc((p.accepted_at||'').slice(0,10))+
+          ' at confidence '+esc(p.confidence||'—')+'/5 · '+(isNaN(days)?'':days+' days held')+
+          ' · '+((p.triggers||[]).length)+' triggers armed</div>';
+
+        if(state.stale){
+          h+='<p class="sub" style="margin-top:9px;color:var(--warn)">Not in the latest scan — it may '+
+             'have dropped out of the universe. Triggers cannot be checked.</p>';
+        }else if(state.fired.length){
+          h+='<div style="margin-top:10px">'+state.fired.map(function(f){
+            return '<div class="trig fired" style="margin-bottom:6px">'+
+              '<div class="trig-lab">'+esc(f.t.label)+' <span class="flag">FIRED</span></div>'+
+              '<div class="trig-now" style="margin-top:4px">now '+esc(fmtMetric(f.t.metric,f.v))+
+              ' · you set '+esc(f.t.threshold_display||'')+'</div></div>';
+          }).join('')+
+          '<p class="sub" style="line-height:1.55">This is what you said you would sell on, on '+
+          esc((p.accepted_at||'').slice(0,10))+'. It is not a recommendation and the tool has no view '+
+          'on what you do next.</p></div>';
+        }else if(state.near.length){
+          h+='<div style="margin-top:10px">'+state.near.map(function(n){
+            // Say which side of the line it is on. "within 12% of the line" reads
+            // as trouble even when the company is comfortably clear of it.
+            var side=n.t.comparison==='below'?'above the floor':'below the ceiling';
+            return '<div class="trig" style="margin-bottom:6px;border-color:var(--warn)">'+
+              '<div class="trig-lab">'+esc(n.t.label)+'</div>'+
+              '<div class="trig-now" style="margin-top:4px">now '+esc(fmtMetric(n.t.metric,n.v))+
+              ' — '+pct(n.margin,0)+' '+side+', closer than it was</div></div>';
+          }).join('')+'</div>';
+        }else{
+          h+='<p class="sub" style="margin-top:9px;color:var(--good)">No trigger near firing.</p>';
+        }
+
+        // Calibration replay — Appendix B's retrospective, reconstructed.
+        if(days>=365&&state.live){
+          var drift=(state.live.score!=null&&p.accepted_score!=null)
+            ? state.live.score-p.accepted_score : null;
+          h+='<div style="margin-top:11px;padding-top:10px;border-top:1px solid var(--border)">'+
+            '<b style="font-size:11.5px">A year on — what had I got wrong?</b>'+
+            '<div class="sub" style="margin-top:5px;line-height:1.6">'+
+            'You set confidence '+esc(p.confidence)+'/5. Priority score has moved '+
+            (drift==null?'—':(drift>=0?'+':'')+num(drift,1))+' points since. '+
+            'What the app argued then is below; compare it against the current filings yourself — '+
+            'that comparison is the whole point of the exercise.</div>'+
+            '<details style="margin-top:7px"><summary class="sub" style="cursor:pointer">'+
+            'What it argued at the time</summary>'+
+            '<ul class="gaps" style="margin-top:6px">'+
+            (p.argued_for||[]).concat(p.argued_against||[]).slice(0,8).map(function(t){
+              return '<li>'+esc(t)+'</li>';}).join('')+'</ul></details></div>';
+        }
+        h+='</div>';
+      });
+    }
+    h+='<div class="card reveal" style="margin-top:10px"><h3>Appendix A — the annual questions</h3>'+
+      '<ul class="gaps">'+
+      ['Were all the quarterly contributions made? If not, why?',
+       'What was the total cost borne this year — ongoing charges, brokerage, stamp duty, currency — in francs and as a percentage?',
+       'Has the allocation drifted more than five points from target?',
+       'Was the withholding tax correctly declared and credited?',
+       'How many times did I look at the portfolio? How many times did I want to sell? What did I do?',
+       'Did the learning sleeve beat the core, costs included? Over three consecutive years?'
+      ].map(function(q){return '<li>'+esc(q)+'</li>';}).join('')+'</ul>'+
+      '<p class="sub" style="margin-top:9px;line-height:1.55">The last one is the question this whole '+
+      'tool exists to answer honestly. The dossier expects the answer to be no.</p></div>';
+    h+='</section>';
+    return h;
+  }
+
+  /* ── COVERAGE ───────────────────────────────────────── */
+  function renderCoverage(){
+    if(!M)return '';
+    return '<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('info')+'</span>'+
+      '<div><h2>Coverage and method</h2><p>What this cannot see</p></div><div class="line"></div></div>'+
+      '<div class="card reveal"><ul class="gaps">'+
+      (M.coverage_gaps||[]).map(function(g){return '<li>'+esc(g)+'</li>';}).join('')+
+      '</ul><p class="sub" style="margin-top:11px;line-height:1.55">'+esc(M.disclaimer||'')+'</p></div></section>';
+  }
+
+  /* ── SETTINGS ───────────────────────────────────────── */
+  function renderSettings(){
+    var cfg=ghConfig()||{};
+    return '<a class="back" href="#/">'+svg('go')+' Research queue</a>'+
+      '<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('shield')+'</span>'+
+      '<div><h2>Settings</h2><p>Where your decisions are kept</p></div><div class="line"></div></div>'+
+      '<div class="card reveal">'+
+        '<h3>Save decisions to the repository</h3>'+
+        '<p class="sub" style="line-height:1.6;margin-bottom:11px">Every accept becomes a commit under '+
+        '<code>charter/positions/</code>. Versioned, timestamped by git, readable from any device, and it '+
+        'survives a wiped phone — a stronger record than the paper decision journal it replaces. '+
+        'Leave this blank and everything stays on the device only.</p>'+
+        '<label class="sub" style="display:block;margin-bottom:4px">Repository</label>'+
+        '<input id="ghRepo" value="'+esc(cfg.repo||'lgaye1211/ciel-site')+'" '+
+          'style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);'+
+          'background:var(--inset);color:var(--ink);font-size:12px;margin-bottom:10px" '+
+          'autocapitalize="off" autocorrect="off" spellcheck="false">'+
+        '<label class="sub" style="display:block;margin-bottom:4px">Fine-grained token</label>'+
+        '<input id="ghToken" type="password" value="'+esc(cfg.token||'')+'" placeholder="github_pat_..." '+
+          'style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);'+
+          'background:var(--inset);color:var(--ink);font-size:12px" '+
+          'autocapitalize="off" autocorrect="off" spellcheck="false">'+
+        '<div class="blocked" style="color:var(--warn);margin-top:9px">'+
+          'Scope it to <b>Contents: read and write</b> on this one repository and nothing else. '+
+          'It is a write credential sitting on a phone — one repository is the entire blast radius. '+
+          'If the device is lost, revoke it at github.com/settings/tokens.</div>'+
+        '<button class="btn-primary" id="ghSave" style="margin-top:11px">Save</button>'+
+        (pendingCount()?'<div class="blocked" style="color:var(--warn)">'+pendingCount()+
+          ' change(s) waiting to sync.</div>':'')+
+      '</div>'+
+
+      '<div class="card reveal" style="margin-top:12px">'+
+        '<h3>Ask — the Claude key</h3>'+
+        '<p class="sub" style="line-height:1.6;margin-bottom:11px">Turns on the <b>Ask</b> button. '+
+        'The key is stored in this device\'s browser storage and nowhere else. It is never '+
+        'committed to the repository, never written into the page, and the scanner never sees it. '+
+        'This site is served publicly by GitHub Pages regardless of whether the repository is '+
+        'public — that is why the key has to live on the phone rather than in the code. '+
+        'Leave it blank and Ask stays off; the rest of the tool works without it.</p>'+
+        '<label class="sub" style="display:block;margin-bottom:4px">Anthropic API key</label>'+
+        '<input id="aiKey" type="password" value="'+esc(aiKey())+'" placeholder="sk-ant-..." '+
+          'style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);'+
+          'background:var(--inset);color:var(--ink);font-size:12px" '+
+          'autocapitalize="off" autocorrect="off" spellcheck="false">'+
+        '<div class="blocked" style="color:var(--warn);margin-top:9px">'+
+          'A key on a phone is a spending credential. Anyone who gets the device can use it, and '+
+          'browser storage is not a vault. Keep it to one key you can kill on its own, watch the '+
+          'usage page, and if the phone goes missing revoke it at '+
+          'console.anthropic.com/settings/keys before anything else.</div>'+
+        '<button class="btn-primary" id="aiSaveBtn" style="margin-top:11px">Save</button>'+
+        '<p class="sub" style="margin-top:11px;line-height:1.55">Answers are generated by a '+
+        'language model reading the same committed JSON you see on screen. It has no live data, '+
+        'no price feed and no memory between companies. It is instructed to source every figure '+
+        'from the dossier and to say so when the data does not contain an answer — but it is a '+
+        'model, so check anything that matters against the filing itself.</p>'+
+      '</div></section>';
+  }
+
+  /* ── RULE 4 — the drawdown takeover ─────────────────── */
+  function drawdownScreen(){
+    return '<section class="zone"><div class="card reveal" style="border-left:3px solid var(--crit)">'+
+      '<h3 style="color:var(--crit);font-size:14px">The market has fallen more than 20%.</h3>'+
+      '<p style="font-size:13px;line-height:1.7;color:var(--ink);margin:10px 0">'+
+      '<b>Rule 4: I do nothing — and I keep contributing. A fall is not a loss; it is a lower purchase price.</b></p>'+
+      '<p style="font-size:12px;line-height:1.7;color:var(--ink-2);font-style:italic">'+
+      esc((CHARTER&&CHARTER.accepted_in_advance)||'')+'</p>'+
+      '<button class="btn-primary" id="ackDraw" style="margin-top:13px">I have re-read it</button>'+
+      '</div></section>';
+  }
+
+  /* ══ ASK — Claude over the filings ══════════════════
+     The key is entered once in Settings and lives in localStorage on this
+     device. It is never committed, never written into the page source, and the
+     scanner never sees it. GitHub Pages serves this file to anyone, so the only
+     safe place for a credential is the device — the same arrangement as the
+     GitHub token. Requests go from the phone straight to api.anthropic.com,
+     which needs an explicit header to permit a browser origin; that header is
+     Anthropic acknowledging the exposure, not removing it.
+
+     What the model gets is the committed JSON and nothing else. It has no
+     network access, no memory between companies, and no ability to place an
+     order. It reads the same filings-derived figures on screen, which is the
+     point: an answer it cannot source from the dossier is an answer it is
+     required to refuse. */
+  var AKEY='ciel-sleeve-anthropic';
+  var ASK={company:null,log:[],busy:false,ctrl:null};
+
+  function aiKey(){try{return localStorage.getItem(AKEY)||'';}catch(e){return '';}}
+  function aiSaveKey(k){
+    try{k?localStorage.setItem(AKEY,k):localStorage.removeItem(AKEY);}catch(e){}
+  }
+
+  /* A 150-row queue at full fidelity is a third of a megabyte. This is the
+     part that supports "which of these are alike" without shipping the lot. */
+  function queueDigest(){
+    return ((L&&L.companies)||[]).map(function(c){
+      return {rank:c.rank,name:c.name,ticker:c.ticker,slug:c.slug,sector:c.sector,
+        country:c.country,score:c.score,dimensions:c.dimensions,
+        listed_years:c.listed_years,revenue_ttm:c.revenue_ttm,
+        revenue_growth:c.revenue_growth,gross_margin:c.gross_margin,
+        operating_margin:c.operating_margin,runway_months:c.runway_months,
+        cash_flow_positive:c.cash_flow_positive,dilution:c.dilution,
+        flags:c.flags};
+    });
+  }
+
+  var ASK_RULES =
+    'You are the research assistant inside CIEL Sleeve, a terminal Arthur uses for the '+
+    'learning sleeve of his portfolio — at most 10% of it, at most four companies, held for '+
+    'years. He is fourteen, Swiss, thinks in Swiss francs, and is serious about this. Write for '+
+    'someone intelligent who has not yet met the vocabulary. Never talk down to him.\n\n'+
+
+    'GROUNDING — the hard rule.\n'+
+    'Every figure you state must come from the JSON below, which is derived from SEC filings. '+
+    'Quote the number and say which period and which filing it came from. If the JSON does not '+
+    'contain something, say so in one plain sentence and stop — "the dossier has no customer '+
+    'count; that is not in the tagged data" is a complete and correct answer. Do not fill a gap '+
+    'from memory, do not estimate, do not reason from what you recall about the company. Your '+
+    'training data is older than these filings and may be wrong about them.\n\n'+
+
+    'WHAT YOU DO NOT DO.\n'+
+    'You do not forecast returns, name price targets, or say what a share is worth — there is no '+
+    'price anywhere in this data, so any valuation claim would be fabricated. You do not tell him '+
+    'to buy, sell, or hold; that decision is his and the tool has no view on it. You do not '+
+    'describe a company as a good or bad investment. You describe what was filed, what it '+
+    'implies, and what remains unknown. Refuse these requests briefly, without a lecture, and '+
+    'then answer the part you can.\n\n'+
+
+    'HOW TO BE USEFUL.\n'+
+    '1. Depth on one company beats breadth. When he asks about a company, go through what it '+
+    'sells, how the money arrives, what the quarterly series actually shows, who filed as an '+
+    'insider and what they did with their shares, what the events and legal sections say, and '+
+    'where the record is thin.\n'+
+    '2. Explain jargon the moment it appears. Gross margin, dilution, runway, operating cash '+
+    'flow, a 10-Q against a 20-F — define it in one clause and carry on.\n'+
+    '3. When asked to challenge him, be genuinely adversarial. Argue the strongest case against, '+
+    'name the figure that would have to hold for the optimistic reading to be right, and say '+
+    'plainly which one is weakest. Do not soften it and do not balance it back out at the end.\n'+
+    '4. Distinguish a fact from a reading of it. "Revenue grew 41%" is a fact. "That growth is '+
+    'durable" is a reading, and you say so before offering it.\n'+
+    '5. Base rates belong in the answer, not in a disclaimer. Bessembinder (2018) found 57.8% of '+
+    'US listed stocks underperformed one-month Treasury bills over their lifetimes, and the net '+
+    'wealth the market created traces to about 4% of companies. Sharpe (1991) showed the average '+
+    'active investor matches the index before costs and trails it after. These are the odds this '+
+    'sleeve is playing against.\n\n'+
+
+    'WHAT THE DATA CANNOT SEE — say this whenever it bears on the answer.\n'+
+    'No share price, no market capitalisation, no valuation of any kind. SEC filers only, so '+
+    'Swiss, EU and most Asian listings are simply absent. No executive biographies — the team '+
+    'section is Form 3/4/5 ownership, meaning names, titles, holdings and trades, and nothing '+
+    'about anyone\'s history before this company. Officer lists are as of the filing date. '+
+    'Acquisitions leave almost no trace in SEC data.\n\n'+
+
+    'STYLE. Plain British English, short paragraphs, a bullet list where a list helps. No '+
+    'preamble, no summary of the question, no closing pep. Numbers as they appear in the '+
+    'dossier — percentages to one decimal, money in the units given. Do not use headings for a '+
+    'two-paragraph answer.';
+
+  function askContext(){
+    var blocks=[{type:'text',text:ASK_RULES}];
+    var parts=[];
+    if(ASK.company){
+      parts.push('THE COMPANY CURRENTLY OPEN ON SCREEN — the full dossier as committed:\n'+
+        JSON.stringify(ASK.company));
+    }
+    var digest=queueDigest();
+    if(digest.length){
+      parts.push('THE FULL RESEARCH QUEUE — '+digest.length+' companies that survived screening, '+
+        'summary fields only. Use this for comparisons and for questions across the whole list:\n'+
+        JSON.stringify(digest));
+    }
+    if(M){
+      parts.push('SCAN METADATA — cohort, source status and the stated coverage gaps:\n'+
+        JSON.stringify({generated_at:M.generated_at,cohort:M.cohort,counts:M.counts,
+          disqualifications:M.disqualifications,coverage_gaps:M.coverage_gaps}));
+    }
+    if(CHARTER){
+      parts.push('ARTHUR\'S CHARTER — the rules this tool enforces:\n'+JSON.stringify(CHARTER));
+    }
+    if(parts.length){
+      // Cached on the trailing block: the dossier and queue are identical across
+      // every follow-up in a thread, so only the new question is billed at full
+      // rate after the first exchange.
+      blocks.push({type:'text',text:parts.join('\n\n'),cache_control:{type:'ephemeral'}});
+    }
+    return blocks;
+  }
+
+  /* Small deliberately: bold, inline code, bullets, paragraphs. Anything more
+     is a markdown library, and the repo does not take dependencies. */
+  function md(text){
+    var s=esc(text)
+      .replace(/`([^`\n]+)`/g,'<code>$1</code>')
+      .replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');
+    var out='',list=false;
+    s.split('\n').forEach(function(line){
+      var item=line.match(/^\s*(?:[-*•]|\d+\.)\s+(.*)$/);
+      if(item){
+        if(!list){out+='<ul>';list=true;}
+        out+='<li>'+item[1]+'</li>';
+        return;
+      }
+      if(list){out+='</ul>';list=false;}
+      if(line.trim())out+='<p>'+line+'</p>';
+    });
+    if(list)out+='</ul>';
+    return out;
+  }
+
+  function askBody(){return $('#askBody');}
+  function askScroll(){var b=askBody();if(b)b.scrollTop=b.scrollHeight;}
+
+  function askNote(html,cls){
+    var el=document.createElement('div');
+    el.className='msg '+(cls||'ai');
+    el.innerHTML=html;
+    askBody().appendChild(el);askScroll();
+    return el;
+  }
+
+  function askHeader(){
+    var where=$('#askWhere');
+    if(!where)return;
+    where.textContent=ASK.company
+      ? ASK.company.name+(ASK.company.ticker?' · '+ASK.company.ticker:'')
+      : 'the research queue';
+  }
+
+  var CHIPS_COMPANY=[
+    ['Explain the business','Explain what this company actually sells and how the money reaches it, '+
+      'in plain words, using the filing text and the quarterly figures in the dossier.'],
+    ['Argue against it','Make the strongest case against this company that the filings support. '+
+      'Be harsh. Name the single weakest number and say what would have to be true for the '+
+      'optimistic reading to hold.'],
+    ['Read the numbers','Walk me through the quarter-by-quarter table line by line — revenue, '+
+      'growth, margin, operating cash — and tell me which movements matter and which are noise.'],
+    ['Who runs it','What do the ownership filings show about the people running this — names, '+
+      'titles, how much they hold, what they have bought or sold, and what this record cannot '+
+      'tell me about them.'],
+    ['Compare it','How does this company sit against the rest of the queue on growth, margin, '+
+      'runway and dilution? Name the companies it most resembles and where it is the outlier.'],
+    ['What is missing','What would I need to know before deciding, that is not in this dossier '+
+      'at all? Be specific about where the data stops.']
+  ];
+  var CHIPS_QUEUE=[
+    ['How the score works','Explain the five scoring dimensions and what each one is actually '+
+      'measuring, using real examples from the queue.'],
+    ['Find me a shortlist','Which companies in the queue are growing revenue while holding gross '+
+      'margin and not diluting heavily? List them with the figures.'],
+    ['What got eliminated','Explain the disqualification counts — what each reason means and why '+
+      'it is a hard cut rather than a low score.'],
+    ['The odds','Given the base rates, what is realistically likely to happen to four companies '+
+      'picked from a list like this? Do not soften it.'],
+    ['Explain a term','I will name a term from the queue and you define it plainly. Start by '+
+      'listing the five most worth understanding here.']
+  ];
+
+  function renderChips(){
+    var box=$('#askChips');if(!box)return;
+    var set=ASK.company?CHIPS_COMPANY:CHIPS_QUEUE;
+    box.innerHTML=set.map(function(c,i){
+      return '<button type="button" class="askchip" data-i="'+i+'">'+esc(c[0])+'</button>';
+    }).join('');
+  }
+
+  function askReset(){
+    ASK.log=[];
+    var b=askBody();if(!b)return;
+    if(!aiKey()){
+      b.innerHTML='<div class="msg err">No Anthropic API key on this device.</div>'+
+        '<div class="msg ai"><p>Add one in <b>Settings</b> and it stays in this device\'s storage — '+
+        'it is never committed to the repository and never appears in the page source. '+
+        'The site is public; the key is not.</p>'+
+        '<p><a href="#/settings" id="askToSettings">Open settings ↗</a></p></div>';
+      return;
+    }
+    b.innerHTML='<div class="askctx">Reading '+
+      (ASK.company?'the <b>'+esc(ASK.company.name)+'</b> dossier':'the whole <b>research queue</b>')+
+      ' plus the coverage notes and your charter. Answers come from the filings in that data — '+
+      'nothing else.</div>';
+    askScroll();
+  }
+
+  function askOpen(){
+    $('#askSheet').classList.add('on');
+    $('#askScrim').classList.add('on');
+    $('#askFab').setAttribute('aria-expanded','true');
+    askHeader();renderChips();
+    if(!ASK.log.length)askReset();
+    var input=$('#askInput');
+    if(input&&innerWidth>=900)input.focus();
+  }
+  function askClose(){
+    if(ASK.ctrl){try{ASK.ctrl.abort();}catch(e){}ASK.ctrl=null;ASK.busy=false;}
+    $('#askSheet').classList.remove('on');
+    $('#askScrim').classList.remove('on');
+    $('#askFab').setAttribute('aria-expanded','false');
+  }
+
+  function askSetCompany(dossier){
+    var same=ASK.company&&dossier&&ASK.company.slug===dossier.slug;
+    ASK.company=dossier||null;
+    document.body.classList.toggle('has-accept',!!dossier);
+    if(!same){askReset();renderChips();}
+    askHeader();
+  }
+
+  function askSend(question){
+    if(ASK.busy||!question)return;
+    var key=aiKey();
+    if(!key){askReset();return;}
+
+    askNote(esc(question).replace(/\n/g,'<br>'),'me');
+    ASK.log.push({role:'user',content:question});
+
+    var out=askNote('<span class="thinking"><i></i><i></i><i></i></span>','ai');
+    ASK.busy=true;
+    $('#askSend').disabled=true;
+    ASK.ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+
+    var text='',thinking=false,refused=false,painting=false;
+    function paint(){
+      if(painting)return;
+      painting=true;
+      requestAnimationFrame(function(){
+        painting=false;
+        out.innerHTML=text?md(text)
+          :'<span class="thinking"><i></i><i></i><i></i></span>'+
+           (thinking?' <span class="sub">working through the filings…</span>':'');
+        askScroll();
+      });
+    }
+
+    fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      signal:ASK.ctrl?ASK.ctrl.signal:undefined,
+      headers:{
+        'content-type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        // Anthropic blocks browser origins unless this is set. It permits the
+        // request; it does not make holding a key in a browser safe.
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-opus-5',
+        max_tokens:8000,
+        thinking:{type:'adaptive'},
+        output_config:{effort:'high'},
+        system:askContext(),
+        messages:ASK.log.map(function(m){return {role:m.role,content:m.content};}),
+        stream:true
+      })
+    }).then(function(res){
+      if(!res.ok){
+        return res.text().then(function(body){
+          var msg=body;
+          try{msg=JSON.parse(body).error.message;}catch(e){}
+          throw new Error(res.status===401
+            ? 'The key was rejected (401). Check it in Settings.'
+            : (res.status===429
+              ? 'Rate limited (429). Wait a moment and ask again.'
+              : res.status+' — '+msg));
+        });
+      }
+      var reader=res.body.getReader(),dec=new TextDecoder(),buf='';
+      function pump(){
+        return reader.read().then(function(chunk){
+          if(chunk.done)return;
+          buf+=dec.decode(chunk.value,{stream:true});
+          var lines=buf.split('\n');
+          buf=lines.pop();
+          lines.forEach(function(line){
+            if(line.indexOf('data:')!==0)return;
+            var raw=line.slice(5).trim();
+            if(!raw||raw==='[DONE]')return;
+            var ev;try{ev=JSON.parse(raw);}catch(e){return;}
+            if(ev.type==='content_block_start'&&ev.content_block&&
+               ev.content_block.type==='thinking'){thinking=true;paint();}
+            else if(ev.type==='content_block_delta'&&ev.delta){
+              if(ev.delta.type==='text_delta'&&ev.delta.text){text+=ev.delta.text;paint();}
+              else if(ev.delta.type==='thinking_delta'){thinking=true;paint();}
+            }
+            else if(ev.type==='message_delta'&&ev.delta&&ev.delta.stop_reason==='refusal'){
+              refused=true;
+            }
+            else if(ev.type==='error'){
+              throw new Error((ev.error&&ev.error.message)||'stream error');
+            }
+          });
+          return pump();
+        });
+      }
+      return pump();
+    }).then(function(){
+      // A refusal carries no content, so reading the empty block as an answer
+      // would render a blank bubble and look like a bug.
+      if(refused){
+        out.className='msg err';
+        out.innerHTML='Claude declined to answer that one. Rephrase it and try again.';
+      }else if(!text){
+        out.className='msg err';
+        out.innerHTML='Empty response. Ask again.';
+      }else{
+        out.innerHTML=md(text);
+        ASK.log.push({role:'assistant',content:text});
+      }
+      askScroll();
+    }).catch(function(err){
+      if(err&&err.name==='AbortError')return;
+      out.className='msg err';
+      out.innerHTML=esc(err.message||'Request failed.');
+      // Drop the question that never got an answer, so a retry does not send
+      // the same turn twice.
+      ASK.log.pop();
+      askScroll();
+    }).then(function(){
+      ASK.busy=false;ASK.ctrl=null;
+      var send=$('#askSend');if(send)send.disabled=false;
+    });
+  }
+
+  (function bindAsk(){
+    var fab=$('#askFab'),sheet=$('#askSheet'),input=$('#askInput');
+    fab.innerHTML=svg('chat')+'<span>Ask</span>';
+    $('#askIc').innerHTML=svg('chat');
+    $('#askClose').innerHTML=svg('close');
+    $('#askSend').innerHTML=svg('send');
+    fab.addEventListener('click',askOpen);
+    $('#askClose').addEventListener('click',askClose);
+    $('#askScrim').addEventListener('click',askClose);
+    document.addEventListener('keydown',function(e){
+      if(e.key==='Escape'&&sheet.classList.contains('on'))askClose();});
+    $('#askChips').addEventListener('click',function(e){
+      var b=e.target.closest('.askchip');if(!b)return;
+      var set=ASK.company?CHIPS_COMPANY:CHIPS_QUEUE;
+      askSend(set[parseInt(b.getAttribute('data-i'),10)][1]);
+    });
+    $('#askForm').addEventListener('submit',function(e){
+      e.preventDefault();
+      var q=input.value.trim();
+      if(!q)return;
+      input.value='';input.style.height='';
+      askSend(q);
+    });
+    input.addEventListener('input',function(){
+      this.style.height='';this.style.height=Math.min(this.scrollHeight,132)+'px';});
+    // Enter sends on a desktop keyboard; on a phone Enter has to stay a newline
+    // or the on-screen return key becomes unusable.
+    input.addEventListener('keydown',function(e){
+      if(e.key==='Enter'&&!e.shiftKey&&innerWidth>=900){
+        e.preventDefault();$('#askForm').dispatchEvent(new Event('submit',{cancelable:true}));
+      }
+    });
+    askBody().addEventListener('click',function(e){
+      if(e.target.closest('#askToSettings'))askClose();});
+  })();
+
+  /* ── ROUTER ─────────────────────────────────────────── */
+  function route(){
+    var hash=location.hash||'#/';
+    var view=$('#view');
+    if(hash==='#/settings'){
+      view.innerHTML=renderSettings();
+      $('#ghSave').addEventListener('click',function(){
+        ghSave({repo:$('#ghRepo').value.trim(),token:$('#ghToken').value.trim()});
+        flushPending();
+        this.textContent='Saved';
+      });
+      $('#aiSaveBtn').addEventListener('click',function(){
+        aiSaveKey($('#aiKey').value.trim());
+        askReset();
+        this.textContent='Saved';
+      });
+      hydrate();window.scrollTo(0,0);return;
+    }
+    if(hash.indexOf('#/c/')===0){
+      var slug=hash.slice(4);
+      view.innerHTML='<div class="empty">Loading '+esc(slug)+'…</div>';
+      fetch(DATA+'companies/'+encodeURIComponent(slug)+'.json?v='+
+            encodeURIComponent((M&&M.generated_at)||''))
+        .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
+        .then(function(d){view.innerHTML=renderDossier(d);bindDossier(d);hydrate();
+          askSetCompany(d);window.scrollTo(0,0);})
+        .catch(function(err){view.innerHTML='<div class="empty"><b>Could not load that dossier.</b>'+
+          'data/sleeve/companies/'+esc(slug)+'.json — '+esc(err.message)+'</div>';});
+      return;
+    }
+    askSetCompany(null);
+    if(hash==='#/review'){view.innerHTML=renderReview();hydrate();window.scrollTo(0,0);return;}
+    view.innerHTML=charterBand()+renderQueue()+baseRateSection()+renderCoverage();
+    var sb=$('#stripBtn');
+    if(sb)sb.addEventListener('click',function(){
+      var more=$('#stripMore'),open=more.hidden;
+      more.hidden=!open;this.setAttribute('aria-expanded',String(open));
+      this.classList.toggle('open',open);
+    });
+    var why=$('#whyBtn');
+    if(why)why.addEventListener('click',function(){
+      var box=$('#whyBox');box.hidden=!box.hidden;
+      this.textContent=box.hidden?'Why were they eliminated?':'Hide';});
+    document.querySelectorAll('.qrow').forEach(function(b){
+      b.addEventListener('click',function(){location.hash='#/c/'+b.getAttribute('data-slug');});
+    });
+    hydrate();
+  }
+
+  function bindDossier(d){
+    var conf=$('#conf'),chosen=(POS[d.slug]&&POS[d.slug].confidence)||null;
+    if(conf)conf.addEventListener('click',function(e){
+      var b=e.target.closest('button[data-c]');if(!b)return;
+      chosen=parseInt(b.getAttribute('data-c'),10);
+      conf.querySelectorAll('button').forEach(function(x){
+        x.setAttribute('aria-pressed',x===b?'true':'false');});
+      var w=$('#confWarn');if(w)w.hidden=true;
+    });
+    var btn=$('#acceptBtn');
+    if(btn)btn.addEventListener('click',function(){
+      if(!chosen){var w=$('#confWarn');if(w)w.hidden=false;return;}
+      var record={
+        slug:d.slug,name:d.name,ticker:d.ticker,cik:d.cik,
+        confidence:chosen,
+        accepted_at:new Date().toISOString(),
+        accepted_score:(d.score&&d.score.total)||null,
+        accepted_cohort:(L&&L.cohort)||'',
+        rubric_version:(d.score&&d.score.rubric_version)||'',
+        // Store what the app argued at the time. A year on, the review replays
+        // this against what actually happened - Appendix B's retrospective,
+        // without you having had to write anything.
+        argued_for:(d.bull||[]).map(function(e){return e.text;}),
+        argued_against:(d.bear||[]).map(function(e){return e.text;}),
+        metrics_at_accept:d.metrics||{},
+        triggers:d.triggers||[],
+        pre_cleared:false
+      };
+      POS[d.slug]=record;
+      savePos();
+
+      var path='charter/positions/'+d.slug+'.json';
+      var msg='sleeve: accept '+d.name+' (confidence '+chosen+'/5)';
+      if(ghConfig()){
+        ghPut(path,record,msg).catch(function(){queuePending({path:path,payload:record,message:msg});});
+      }else{
+        queuePending({path:path,payload:record,message:msg});
+      }
+      location.hash='#/';
+    });
+  }
+
+  window.addEventListener('hashchange',route);
+
+  /* ── BOOT ───────────────────────────────────────────── */
+  if(location.protocol==='file:'){
+    $('#view').innerHTML='<div class="empty"><b>This page needs a web server.</b>'+
+      'It reads its data with fetch(), which browsers block on file:// URLs.'+
+      '<code>python3 -m http.server 8000</code><br><span style="font-size:11px">'+
+      'then open http://localhost:8000/sleeve.html</span></div>';
+    $('#askFab').style.display='none';
+    return;
+  }
+
+  Promise.all([
+    fetch(DATA+'manifest.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+    fetch(DATA+'latest.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+    fetch('charter/charter.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+    fetch('scanner/config/costs.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
+  ]).then(function(res){
+    M=res[0];L=res[1];CHARTER=res[2];COSTS=res[3];
+    flushPending();
+    if(!L){
+      $('#view').innerHTML='<div class="empty"><b>No scan data yet.</b>'+
+        'Run the scanner to produce data/sleeve/latest.json.'+
+        '<code>python3 scanner/run.py --mode deep</code></div>';
+      return;
+    }
+    if(M&&M.schema_version&&M.schema_version.split('.')[0]!=='1'){
+      $('#view').innerHTML='<div class="empty"><b>This page is older than the data.</b>'+
+        'Hard refresh to pick up the current version.</div>';
+      return;
+    }
+    renderPills();
+    route();
+  });
+})();
+</script>
+</body>
+</html>

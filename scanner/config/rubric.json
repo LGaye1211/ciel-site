@@ -1,0 +1,104 @@
+{
+  "rubric_version": "1.0.0",
+  "label": "Charter rubric - derived from 'Investing for the very long term' (July 2026)",
+  "note": "engine.py knows nothing about this file. Dimensions reference signal ids registered in score/signals.py. Retuning is a config edit; adding a new kind of signal needs a function there.",
+
+  "disqualifiers": [
+    { "id": "going_concern",        "label": "Going-concern doubt disclosed" },
+    { "id": "runway_under_12m",     "label": "Under 12 months of cash at the current burn", "threshold": 12 },
+    { "id": "dilution_over_25pct",  "label": "Diluted share count up more than 25% in a year", "threshold": 0.25 },
+    { "id": "shell_or_blank_check", "label": "Shell, blank-cheque or non-operating entity" },
+    { "id": "leveraged_instrument", "label": "Leveraged, inverse or derivative-based instrument" },
+    { "id": "no_revenue",           "label": "No reported revenue" },
+    { "id": "stale_filings",        "label": "No filing within the allowed window" },
+    { "id": "stale_data",           "label": "Reported figures too old to describe the business today" },
+    { "id": "gapped_series",        "label": "Reporting series has too many holes to read" },
+    { "id": "insufficient_history", "label": "Too few reported quarters to judge" }
+  ],
+  "disqualifier_note": "Ellis, The Loser's Game (1975): you win by ceasing to commit errors, not by hitting winners. These are hard cuts - a company failing any one of them is never scored, never ranked, and never shown as a candidate.",
+
+  "dimensions": [
+    {
+      "id": "team",
+      "label": "Team and history",
+      "weight": 30,
+      "note": "Prior-company history needs executive biographies, and no free structured source provides them. What filings do establish is who the officers are, what they hold and what they trade. team_evidence keeps a thin record from redistributing its way to a maximum score on the dimension the charter cares most about.",
+      "signals": [
+        { "id": "insider_ownership",     "weight": 0.30, "label": "Insider ownership" },
+        { "id": "insider_selling",       "weight": 0.25, "label": "Insider selling", "direction": "lower_is_better" },
+        { "id": "team_evidence",         "weight": 0.25, "label": "How much of the team we can see" },
+        { "id": "prior_venture_count",   "weight": 0.10, "label": "Prior ventures by named officers" },
+        { "id": "prior_ipo_link",        "weight": 0.10, "label": "Officer linked to a company that later listed" }
+      ]
+    },
+    {
+      "id": "quality",
+      "label": "Business quality",
+      "weight": 25,
+      "signals": [
+        { "id": "revenue_growth",        "weight": 0.35, "label": "Revenue growth, year on year" },
+        { "id": "growth_stability",      "weight": 0.20, "label": "Consistency of that growth" },
+        { "id": "gross_margin",          "weight": 0.25, "label": "Gross margin" },
+        { "id": "margin_trend",          "weight": 0.20, "label": "Direction of gross margin" }
+      ]
+    },
+    {
+      "id": "safety",
+      "label": "Margin of safety",
+      "weight": 20,
+      "note": "Graham, The Intelligent Investor, chapter 20 - named in the dossier's reading list. Survival first.",
+      "signals": [
+        { "id": "runway_months",         "weight": 0.30, "label": "Months of cash at the current burn" },
+        { "id": "net_cash_ratio",        "weight": 0.25, "label": "Net cash against total assets" },
+        { "id": "debt_to_equity",        "weight": 0.20, "label": "Debt to equity", "direction": "lower_is_better" },
+        { "id": "dilution_rate",         "weight": 0.15, "label": "Share count growth", "direction": "lower_is_better" },
+        { "id": "cash_self_sufficiency", "weight": 0.10, "label": "Operating cash flow positive" }
+      ]
+    },
+    {
+      "id": "explainability",
+      "label": "Can you explain it",
+      "weight": 10,
+      "note": "Charter rule 7: I buy nothing I cannot explain in three sentences to a friend.",
+      "signals": [
+        { "id": "single_segment",        "weight": 0.40, "label": "One reportable business" },
+        { "id": "description_clarity",   "weight": 0.35, "label": "Plain business description" },
+        { "id": "balance_sheet_simplicity", "weight": 0.25, "label": "Simple balance sheet" }
+      ]
+    },
+    {
+      "id": "coverage",
+      "label": "How much we actually know",
+      "weight": 15,
+      "note": "Without this a company with almost no data ranks well purely by having no bad news. The most common failure of naive rubrics.",
+      "signals": [
+        { "id": "field_completeness",    "weight": 0.60, "label": "Reported fields present" },
+        { "id": "history_depth",         "weight": 0.40, "label": "Quarters of history available" }
+      ]
+    }
+  ],
+
+  "penalties": [
+    { "id": "customer_concentration", "points": -10, "label": "Revenue concentrated in few customers" },
+    { "id": "recent_loss_widening",   "points": -8,  "label": "Operating loss widening" },
+    { "id": "negative_equity",        "points": -12, "label": "Negative shareholders' equity" },
+    { "id": "heavy_dilution",         "points": -8,  "label": "Share count up more than 15% in a year" },
+    { "id": "thin_history",           "points": -6,  "label": "Fewer than six quarters reported" },
+    { "id": "foreign_annual_only",    "points": -4,  "label": "Annual reporting only (20-F filer)" }
+  ],
+
+  "base_rates": [
+    {
+      "source": "Sharpe, The Arithmetic of Active Management, Financial Analysts Journal, January 1991",
+      "text": "Before costs, the average active manager equals the market. After costs, he falls short of it by the amount of those costs. This is an accounting identity, not an opinion - it would hold in a world populated exclusively by geniuses."
+    },
+    {
+      "source": "Bessembinder, Do stocks outperform Treasury bills?, Journal of Financial Economics, 2018",
+      "text": "57.8% of US common stocks underperformed one-month Treasury bills over their lifetimes. The entire net wealth creation of the US market traces to about 4% of listed companies."
+    },
+    {
+      "source": "Fama, Efficient Capital Markets, Journal of Finance, May 1970",
+      "text": "Public information is already in prices. Stock selection has no positive expected payoff for a private individual."
+    }
+  ]
+}

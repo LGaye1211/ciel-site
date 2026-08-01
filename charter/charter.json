@@ -1,0 +1,45 @@
+{
+  "_source": "Investing for the very long term — preparatory dossier, July 2026. Part VI.",
+  "holder": "Arthur",
+  "reference_currency": "CHF",
+  "drawn_up": "",
+  "signed": false,
+  "horizon_from": 2026,
+  "horizon_to": 2066,
+
+  "allocation": {
+    "core_world": 0.75,
+    "core_swiss": 0.15,
+    "learning": 0.10
+  },
+  "learning_sleeve": {
+    "max_share": 0.10,
+    "min_companies": 2,
+    "max_companies": 4
+  },
+  "quarterly_contribution_chf": null,
+
+  "rules": [
+    { "n": 1,  "text": "I contribute the planned amount every quarter, on a fixed date, whatever the market does.", "enforced": "contribution calendar" },
+    { "n": 2,  "text": "I look at my portfolio only twice a year: end of June and end of December.", "enforced": "positions view locked outside those months; overrides logged" },
+    { "n": 3,  "text": "I never sell a core holding before I am 25, except in case of vital necessity.", "enforced": "core is out of scope for this tool" },
+    { "n": 4,  "text": "If the market falls by more than 20%, I do nothing — and I keep contributing. A fall is not a loss; it is a lower purchase price.", "enforced": "drawdown takeover screen" },
+    { "n": 5,  "text": "The learning sleeve never exceeds 10%. If I lose money there, I do not top it up.", "enforced": "four slots, hard; accept disabled above cap; top-up refused when underwater" },
+    { "n": 6,  "text": "I use no leverage, in any form, ever.", "enforced": "leveraged and inverse instruments excluded from the universe" },
+    { "n": 7,  "text": "I buy nothing I cannot explain in three sentences to a friend.", "enforced": "three-sentence summary generated and shown before accepting" },
+    { "n": 8,  "text": "I rebalance once a year, in January, by directing new contributions towards the sleeve that has fallen behind, rather than by selling.", "enforced": "January prompt computes drift" },
+    { "n": 9,  "text": "Before every purchase in the learning sleeve, I write down why I am buying and what would make me sell. Without that text, no purchase.", "enforced": "case and quantified triggers auto-drafted and stored on accept; confidence required" },
+    { "n": 10, "text": "Any change to this charter is written down, dated, and takes effect only thirty days later. No important decision is taken on the day I feel like taking it.", "enforced": "pending_changes below; effective_from must pass before it applies" }
+  ],
+
+  "accepted_in_advance": "Over forty years, my portfolio will lose more than 30% on three or four occasions, and perhaps more than 50% once. I know this today, in the cold. On the day it happens, I will re-read this sentence before doing anything at all.",
+
+  "viewing_months": [6, 12],
+  "rebalance_month": 1,
+  "pending_changes": [],
+
+  "compliance": {
+    "pre_clearance_required": null,
+    "note": "The personal account dealing rules of a financial institution generally cover the accounts of related persons, including minor children. Pre-clearance may be required, particularly for the learning sleeve in individual securities. Confirm with compliance before the account is opened."
+  }
+}
