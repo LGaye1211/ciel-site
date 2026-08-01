@@ -454,6 +454,7 @@
   <div class="hrow">
     <div class="brand">CIEL <span>· SLEEVE</span></div>
     <div class="hspace"></div>
+    <button class="iconbtn" id="liveBtn" title="Live" aria-label="Live"></button>
     <button class="iconbtn" id="pfBtn" title="Portfolio" aria-label="Portfolio"></button>
     <button class="iconbtn" id="monthBtn" title="This month" aria-label="This month"></button>
     <button class="iconbtn" id="reviewBtn" title="Reviews" aria-label="Reviews"></button>
@@ -692,6 +693,8 @@
   if(tbtn)tbtn.addEventListener('click',function(){
     var n=curTheme()==='dark'?'light':'dark';
     try{localStorage.setItem(TKEY,n);}catch(e){} setTheme(n);});
+  $('#liveBtn').innerHTML=svg('up');
+  $('#liveBtn').addEventListener('click',function(){location.hash='#/live';});
   $('#pfBtn').innerHTML=svg('wallet');
   $('#pfBtn').addEventListener('click',function(){location.hash='#/portfolio';});
   $('#monthBtn').innerHTML=svg('clock');
@@ -1339,6 +1342,118 @@
       'tool exists to answer honestly. The dossier expects the answer to be no.</p></div>';
     h+='</section>';
     return h;
+  }
+
+  /* ── LIVE ───────────────────────────────────────────
+     Refreshed every sixty seconds, which is as literal as "live" can honestly
+     be made here. The page really does re-read the feed each minute; what it
+     cannot do is make the world produce news each minute. A company files
+     once, and the file only changes when something is filed - so the clock is
+     the app's, and the content is reality's.
+
+     Ordered by how much the item deserves your attention, which is close to
+     the reverse of how a news app would order it. New registrations first,
+     because an S-1 is filed weeks before a share can be bought and is the only
+     genuinely early signal available free. Policy second, because a rule
+     changes what a business is worth and this is the primary document rather
+     than a headline about it. Headlines last, because a price absorbs news in
+     milliseconds and anything readable here has already been paid for. */
+  var LIVE=null,liveTimer=null;
+  function loadLive(){
+    return fetch(DATA+'live.json?t='+Date.now())
+      .then(function(r){return r.ok?r.json():null;})
+      .catch(function(){return null;});
+  }
+  function stopLive(){if(liveTimer){clearInterval(liveTimer);liveTimer=null;}}
+  function startLive(){
+    stopLive();
+    liveTimer=setInterval(function(){
+      if(location.hash!=='#/live'){stopLive();return;}
+      // Repainting only on change keeps a half-read headline from jumping away
+      // under your thumb every minute.
+      loadLive().then(function(d){
+        if(!d)return;
+        if(JSON.stringify(d)===JSON.stringify(LIVE)){touchLiveClock();return;}
+        LIVE=d;var v=$('#view');
+        if(location.hash==='#/live'){v.innerHTML=renderLive();hydrate();}
+      });
+    },60000);
+  }
+  function touchLiveClock(){
+    var el=$('#liveClock');
+    if(el)el.textContent='checked '+new Date().toLocaleTimeString();
+  }
+
+  function renderLive(){
+    var d=LIVE||{};
+    var h='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('clock')+'</span>'+
+      '<div><h2>Live</h2><p>Rechecked every minute · <span id="liveClock">'+
+      esc(d.asof||'loading')+'</span></p></div><div class="line"></div></div>';
+
+    h+='<div class="standing" style="margin:0 0 14px">Nothing on this screen is scored, and none '+
+      'of it reaches the research queue — that is still built from filings alone. Ordered by how '+
+      'much each item deserves your attention, which is roughly the reverse of a news app.</div>';
+
+    var listings=d.listings||[];
+    h+='<div class="card reveal"><h3>Coming to market</h3>'+
+      '<p class="sub" style="line-height:1.6;margin-bottom:10px">A company files an <b>S-1</b> to '+
+      'register an offering, usually weeks before its shares trade, then a <b>424B4</b> once the '+
+      'price is set. This is the earliest anything is knowable: before the S-1 there is nothing '+
+      'published and nothing to buy. These are not in the queue — they have no reporting history '+
+      'yet, so there is nothing to score. Read the prospectus.</p>';
+    h+=listings.length
+      ? listings.slice(0,18).map(function(r){
+          return '<div class="hold"><div><h3 style="font-size:12.5px">'+esc(r.name)+'</h3>'+
+            '<div class="sub">'+esc(r.meaning)+'</div></div>'+
+            '<div class="num"><b style="font-size:12px">'+esc(r.form)+'</b>'+
+            '<span class="sub">'+esc(r.filed)+(r.url?' · <a href="'+esc(r.url)+
+            '" target="_blank" rel="noopener">read ↗</a>':'')+'</span></div></div>';
+        }).join('')
+      : '<p class="sub">Nothing new filed.</p>';
+    h+='</div>';
+
+    var rules=d.policy||[];
+    h+='<div class="card reveal" style="margin-top:12px"><h3>Policy</h3>'+
+      '<p class="sub" style="line-height:1.6;margin-bottom:10px">Rules and proposed rules as '+
+      'issued, from the Federal Register itself rather than reporting about it. A tariff or a '+
+      'safety standard genuinely changes what a business is worth. A speech about one usually '+
+      'does not — and by the time it is broadcast the price has moved, which is why the document '+
+      'is here and the speech is not.</p>';
+    h+=rules.length
+      ? rules.slice(0,10).map(function(r){
+          return '<div class="hold"><div><h3 style="font-size:12.5px">'+
+            (r.url?'<a href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.title)+'</a>'
+                  :esc(r.title))+'</h3>'+
+            '<div class="sub">'+esc(r.agency||'')+'</div></div>'+
+            '<div class="num"><b style="font-size:11px">'+esc(r.kind)+'</b>'+
+            '<span class="sub">'+esc(r.date)+'</span></div></div>';
+        }).join('')
+      : '<p class="sub">Nothing published.</p>';
+    h+='</div>';
+
+    var news=d.news||{},slugs=Object.keys(news);
+    h+='<div class="card reveal" style="margin-top:12px"><h3>Headlines on what you hold</h3>';
+    if(!slugs.length){
+      h+='<p class="sub" style="line-height:1.6">Nothing held, so nothing is being followed. '+
+        'Coverage is only ever fetched for companies you actually own — pulling headlines for all '+
+        '150 would produce a wall of text that reads like a reason to act, which is the opposite '+
+        'of what this is for.</p>';
+    }else{
+      slugs.forEach(function(s){
+        var items=news[s]||[];
+        h+='<div style="margin-bottom:12px"><b style="font-size:12px">'+
+          esc((POS[s]&&POS[s].name)||s)+'</b>'+
+          (items.length?'<ul class="gaps" style="margin-top:5px">'+items.map(function(a){
+            return '<li><a href="'+esc(a.url)+'" target="_blank" rel="noopener">'+esc(a.title)+
+              '</a> <span class="sub">'+esc(a.source)+'</span></li>';}).join('')+'</ul>'
+                       :'<div class="sub">No recent coverage.</div>')+'</div>';
+      });
+      h+='<p class="sub" style="line-height:1.6;margin-top:4px">Read these to understand something '+
+        'that already happened, never to decide something. Your sell triggers are the mechanism '+
+        'for deciding, and they run off filings, not headlines.</p>';
+    }
+    h+='</div>';
+    return h+'</section>';
   }
 
   /* ── MONTHLY REVIEW ─────────────────────────────────
@@ -2262,6 +2377,16 @@
       return;
     }
     askSetCompany(null);
+    if(hash!=='#/live')stopLive();
+    if(hash==='#/live'){
+      view.innerHTML=renderLive();hydrate();window.scrollTo(0,0);
+      if(!LIVE)loadLive().then(function(d){
+        LIVE=d;
+        if(location.hash==='#/live'){view.innerHTML=renderLive();hydrate();}
+      });
+      startLive();
+      return;
+    }
     if(hash==='#/portfolio'){view.innerHTML=renderPortfolio();hydrate();window.scrollTo(0,0);return;}
     if(hash==='#/month'){
       view.innerHTML=renderMonthly();

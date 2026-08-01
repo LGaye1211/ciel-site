@@ -1,0 +1,49 @@
+name: Sleeve — live feed
+
+# New registrations, policy documents, and coverage of what is held.
+#
+# Every fifteen minutes, which is the fastest cadence worth asking for. GitHub's
+# scheduler will not go below five minutes and in practice fires late or skips
+# entirely under load, so a tighter cron would buy nothing but a misleading
+# promise. The page rereads this file every sixty seconds regardless, so the app
+# is as current as the file; the file is as current as the world.
+#
+# All three sources are free and keyless: EDGAR's current-filings feed, the
+# Federal Register API, and GDELT.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sleeve-live
+  cancel-in-progress: true
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Fetch live feeds
+        run: python3 scanner/live.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/sleeve/live.json
+          # Unchanged content is not rewritten, so a quiet quarter hour produces
+          # no commit at all rather than 96 empty ones a day.
+          git diff --cached --quiet && echo "nothing new" && exit 0
+          git commit -m "sleeve: live feed $(date -u +'%Y-%m-%d %H:%M')"
+          git push
