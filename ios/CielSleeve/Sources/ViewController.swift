@@ -9,8 +9,33 @@ import WebKit
 /// that stops a quarterly review from happening.
 final class ViewController: UIViewController {
 
-    /// Point this at your GitHub Pages URL.
-    private let siteURL = URL(string: "https://lgaye1211.github.io/ciel-site/sleeve.html")!
+    /// Every GitHub Pages URL the site has lived at, newest first.
+    ///
+    /// A single hardcoded host would make a repository transfer fatal: Pages
+    /// stops serving the old owner's URL the moment the repo moves, the app
+    /// shows its offline page forever, and fixing it costs a rebuild and a
+    /// second sideload. Sideloading is the expensive part, so the app walks
+    /// this list instead and remembers whichever host answered. Adding a row
+    /// here is enough to survive the next move.
+    private static let candidates: [URL] = [
+        URL(string: "https://arthurgayecom.github.io/ciel-site/sleeve.html")!,
+        URL(string: "https://lgaye1211.github.io/ciel-site/sleeve.html")!,
+    ]
+    private static let savedKey = "ciel.siteURL"
+
+    /// The remembered host is tried first; the rest stay behind it as fallbacks,
+    /// so a site that moves back still recovers on its own.
+    private lazy var order: [URL] = {
+        var list = Self.candidates
+        if let saved = UserDefaults.standard.url(forKey: Self.savedKey),
+           let found = list.firstIndex(of: saved) {
+            list.remove(at: found)
+            list.insert(saved, at: 0)
+        }
+        return list
+    }()
+    private var index = 0
+    private var siteURL: URL { order[min(index, order.count - 1)] }
 
     private var webView: WKWebView!
     private let refresher = UIRefreshControl()
@@ -73,7 +98,21 @@ final class ViewController: UIViewController {
     }
 
     @objc private func reload() {
+        // Start the walk again from the top: a pull-to-refresh after a move
+        // should find the new home rather than retry the one that just failed.
+        index = 0
         load()
+    }
+
+    /// Move to the next candidate, or give up and explain.
+    private func advance() {
+        index += 1
+        if index < order.count {
+            load()
+        } else {
+            index = 0
+            showOffline()
+        }
     }
 
     /// Shown when the site cannot be reached, so a dead connection explains
@@ -90,27 +129,58 @@ extension ViewController: WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        refresher.endRefreshing()
-        showOffline()
+        handleFailure(error)
     }
 
     func webView(_ webView: WKWebView,
                  didFailProvisionalNavigation navigation: WKNavigation!,
                  withError error: Error) {
+        handleFailure(error)
+    }
+
+    /// A cancellation is always one of ours: cancelling a 404 below makes WebKit
+    /// report the abandoned navigation back here as a failure. Advancing on it
+    /// would step past the candidate just moved to and blank the app on the
+    /// exact case this whole mechanism exists to handle.
+    private func handleFailure(_ error: Error) {
         refresher.endRefreshing()
-        showOffline()
+        guard (error as NSError).code != NSURLErrorCancelled else { return }
+        advance()
+    }
+
+    /// A moved site does not fail the navigation - GitHub Pages answers a dead
+    /// URL with its own 404 page, which loads perfectly well and would sit there
+    /// looking like the app was broken. So the status code decides, not the
+    /// absence of an error.
+    func webView(_ webView: WKWebView,
+                 decidePolicyFor navigationResponse: WKNavigationResponse,
+                 decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+        guard navigationResponse.isForMainFrame,
+              let response = navigationResponse.response as? HTTPURLResponse else {
+            decisionHandler(.allow); return
+        }
+        if response.statusCode >= 400 {
+            decisionHandler(.cancel)
+            advance()
+            return
+        }
+        UserDefaults.standard.set(siteURL, forKey: Self.savedKey)
+        decisionHandler(.allow)
     }
 
     /// Keep the app on its own site; send anything else (EDGAR filing links,
-    /// citations) to Safari, where they belong.
+    /// citations) to Safari, where they belong. Every candidate host counts as
+    /// "its own site", or a link tapped after a move would bounce out.
     func webView(_ webView: WKWebView,
                  decidePolicyFor navigationAction: WKNavigationAction,
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard let url = navigationAction.request.url else {
             decisionHandler(.allow); return
         }
+        let ours = Set(Self.candidates.compactMap { $0.host })
         if navigationAction.navigationType == .linkActivated,
-           url.host != siteURL.host, url.isFileURL == false {
+           url.isFileURL == false,
+           url.host.map({ ours.contains($0) }) != true {
             UIApplication.shared.open(url)
             decisionHandler(.cancel)
             return
