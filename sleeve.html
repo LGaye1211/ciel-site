@@ -617,7 +617,49 @@
      everything downstream is written to work without them: a portfolio with no
      prices still knows what you put in, what you own and what the filings say,
      which is most of what the charter actually asks for. */
-  var PX=null;
+  var PX=null,MKEY='ciel-sleeve-market';
+  function mktKey(){try{return localStorage.getItem(MKEY)||'';}catch(e){return '';}}
+  function mktSave(k){try{k?localStorage.setItem(MKEY,k):localStorage.removeItem(MKEY);}catch(e){}}
+
+  /* Prices straight from the phone when a key is present, which removes the
+     repository-secret detour entirely. Held on the device like the other two
+     credentials, and the trade is different in kind from those: this is a
+     free, read-only market-data key. Losing it costs nothing, where the
+     Anthropic key spends money and the GitHub token writes to the repo. That
+     is the whole reason it is allowed to live here at all.
+     Finnhub sends CORS headers, so the browser may call it directly. Failures
+     are swallowed: no price is an expected state everywhere downstream. */
+  function fetchPrices(){
+    var key=mktKey();
+    if(!key||!L||!L.companies)return Promise.resolve(null);
+    var rows=L.companies.filter(function(c){return c.ticker;}).slice(0,30);
+    var held=Object.keys(POS);
+    rows=L.companies.filter(function(c){return c.ticker&&held.indexOf(c.slug)>=0;})
+          .concat(rows).slice(0,30);
+    var seen={},uniq=[];
+    rows.forEach(function(c){if(!seen[c.slug]){seen[c.slug]=1;uniq.push(c);}});
+    return Promise.all(uniq.map(function(c){
+      return fetch('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(c.ticker)+
+                   '&token='+encodeURIComponent(key))
+        .then(function(r){return r.ok?r.json():null;})
+        .then(function(q){
+          // Finnhub answers an unknown symbol with zeroes rather than an
+          // error, which would otherwise publish a real price of nothing.
+          if(!q||!(q.c>0))return null;
+          return {slug:c.slug,close:q.c,currency:'USD',ticker:c.ticker,
+                  date:new Date().toISOString().slice(0,10)};
+        }).catch(function(){return null;});
+    })).then(function(list){
+      var out={};
+      list.filter(Boolean).forEach(function(q){out[q.slug]=q;});
+      if(!Object.keys(out).length)return null;
+      PX=PX||{fx:{}};
+      PX.prices=out;
+      PX.asof=new Date().toLocaleString();
+      return out;
+    });
+  }
+
   function priceFor(slug){
     if(!PX||!PX.prices)return null;
     var p=PX.prices[slug];
@@ -1881,6 +1923,21 @@
       '</div>'+
 
       '<div class="card reveal" style="margin-top:12px">'+
+        '<h3>Share prices</h3>'+
+        '<p class="sub" style="line-height:1.6;margin-bottom:11px">Turns on valuations, profit '+
+        'and loss, and the money-weighted return. Get a free key at <b>finnhub.io</b> — no card, '+
+        'about a minute — and paste it here. Unlike the other two, this one is read-only market '+
+        'data: if it leaked, nothing could be spent and nothing could be changed. That is why it '+
+        'is allowed to sit on the device rather than in the repository.</p>'+
+        '<input id="mktKey" type="password" value="'+esc(mktKey())+'" placeholder="finnhub key" '+
+          'style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);'+
+          'background:var(--inset);color:var(--ink);font-size:12px" '+
+          'autocapitalize="off" autocorrect="off" spellcheck="false">'+
+        '<button class="btn-primary" id="mktSaveBtn" style="margin-top:11px">Save and test</button>'+
+        '<div id="mktOut" class="sub" style="margin-top:9px;line-height:1.55"></div>'+
+      '</div>'+
+
+      '<div class="card reveal" style="margin-top:12px">'+
         '<h3>Ask — the Claude key</h3>'+
         '<p class="sub" style="line-height:1.6;margin-bottom:11px">Turns on the <b>Ask</b> button. '+
         'The key is stored in this device\'s browser storage and nowhere else. It is never '+
@@ -2333,6 +2390,18 @@
         flushPending();
         this.textContent='Saved';
       });
+      $('#mktSaveBtn').addEventListener('click',function(){
+        mktSave($('#mktKey').value.trim());
+        var out=$('#mktOut');
+        out.textContent='Checking…';
+        fetchPrices().then(function(p){
+          out.innerHTML=p
+            ? 'Working — prices for <b>'+Object.keys(p).length+'</b> companies. '+
+              'Valuations and returns are live.'
+            : '<b style="color:var(--crit)">No prices came back.</b> Check the key, or the free '+
+              'quota may be spent for the minute.';
+        });
+      });
       $('#aiSaveBtn').addEventListener('click',function(){
         aiSaveKey($('#aiKey').value.trim());
         askReset();
@@ -2574,6 +2643,7 @@
     fetch(DATA+'prices.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
   ]).then(function(res){
     M=res[0];L=res[1];CHARTER=res[2];COSTS=res[3];PX=res[4];
+    if(mktKey())fetchPrices().then(function(){route();});
     flushPending();
     if(!L){
       $('#view').innerHTML='<div class="empty"><b>No scan data yet.</b>'+
