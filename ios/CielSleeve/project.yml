@@ -44,11 +44,19 @@ targets:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
-        UIStatusBarStyle: UIStatusBarStyleLightContent
-        UIViewControllerBasedStatusBarAppearance: false
+        UIViewControllerBasedStatusBarAppearance: true
+        # Declared explicitly and matched by SceneDelegate.swift. Generating a
+        # scene manifest without a scene delegate makes UIKit ignore
+        # AppDelegate.window, which launches to a black screen rather than
+        # failing the build.
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+          UISceneConfigurations:
+            UIWindowSceneSessionRoleApplication:
+              - UISceneConfigurationName: Default Configuration
+                UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).SceneDelegate
         # No ATS exception needed: GitHub Pages is HTTPS.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ciel.sleeve
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES

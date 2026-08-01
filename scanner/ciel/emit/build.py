@@ -15,6 +15,13 @@ BUDGETS = {
 }
 
 COVERAGE_GAPS = [
+    "No current share price, market capitalisation or valuation. Free sources for "
+    "live prices are either gone or now behind bot challenges, so the only "
+    "valuation-adjacent figure in SEC data is EntityPublicFloat - filed once a year "
+    "on the 10-K cover, as of the prior June. It is shown as a size band with its "
+    "date and is deliberately not scored: a three-year-old float presented as a "
+    "valuation is exactly the error the stale-data filter exists to prevent. "
+    "Nothing here tells you whether a company is cheap.",
     "US SEC filers only, plus foreign private issuers that file 20-F or 40-F. "
     "Swiss, EU and Asian listings that do not file with the SEC are absent - a real "
     "limitation for a CHF investor, and the honest reason is that free structured data "
@@ -84,6 +91,9 @@ def company_row(company, rank):
         "sector": company.sic_description,
         "country": company.country,
         "listed_years": round(company.listed_years, 1) if getattr(company, "listed_years", None) else None,
+        "public_float": m.get("public_float"),
+        "public_float_asof": m.get("public_float_asof"),
+        "public_float_age_months": m.get("public_float_age_months"),
         "revenue_ttm": m.get("revenue_ttm"),
         "revenue_growth": m.get("revenue_growth_yoy"),
         "gross_margin": m.get("gross_margin"),

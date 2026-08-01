@@ -161,6 +161,47 @@ def _annual_fallback(facts, concepts):
     return None
 
 
+def entity_size(facts):
+    """Public float and shares outstanding from the DEI cover-page tags.
+
+    This is the only free valuation-adjacent figure in SEC data, and it is
+    deliberately *not* scored. EntityPublicFloat is filed once a year on the
+    10-K cover, stated as of the last business day of the prior second fiscal
+    quarter, so it runs 12 months stale at best and several years at worst.
+    Deriving a price-to-sales ratio from it would present an old number as a
+    current valuation - the same error the stale_data disqualifier exists to
+    prevent. It is carried as a size band, with its date shown.
+    """
+    dei = (facts.get("facts") or {}).get("dei") or {}
+    out = {}
+
+    node = dei.get("EntityPublicFloat")
+    if node:
+        rows = (node.get("units") or {}).get("USD") or []
+        dated = [r for r in rows if r.get("end") and r.get("val")]
+        if dated:
+            latest = max(dated, key=lambda r: r["end"])
+            out["public_float"] = float(latest["val"])
+            out["public_float_asof"] = latest["end"]
+            try:
+                asof = datetime.date.fromisoformat(latest["end"])
+                out["public_float_age_months"] = (
+                    (datetime.date.today().year - asof.year) * 12
+                    + (datetime.date.today().month - asof.month))
+            except ValueError:
+                pass
+
+    node = dei.get("EntityCommonStockSharesOutstanding")
+    if node:
+        rows = (node.get("units") or {}).get("shares") or []
+        dated = [r for r in rows if r.get("end") and r.get("val")]
+        if dated:
+            latest = max(dated, key=lambda r: r["end"])
+            out["shares_outstanding"] = float(latest["val"])
+            out["shares_outstanding_asof"] = latest["end"]
+    return out
+
+
 def build_series(facts):
     """Return {metric: Series} plus a flag for annual-only reporters."""
     series = {}

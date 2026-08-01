@@ -17,7 +17,7 @@ final class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor(red: 0.027, green: 0.051, blue: 0.094, alpha: 1)
+        view.backgroundColor = Self.pageColour(for: traitCollection)
 
         let config = WKWebViewConfiguration()
         // The default persistent store keeps localStorage across launches, which
@@ -47,7 +47,26 @@ final class ViewController: UIViewController {
         load()
     }
 
-    override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
+    /// The page themes itself light or dark from the system setting, so a fixed
+    /// light status bar would be invisible against the light theme.
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        traitCollection.userInterfaceStyle == .light ? .darkContent : .lightContent
+    }
+
+    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
+        super.traitCollectionDidChange(previous)
+        if previous?.userInterfaceStyle != traitCollection.userInterfaceStyle {
+            view.backgroundColor = Self.pageColour(for: traitCollection)
+            webView.backgroundColor = view.backgroundColor
+            setNeedsStatusBarAppearanceUpdate()
+        }
+    }
+
+    private static func pageColour(for traits: UITraitCollection) -> UIColor {
+        traits.userInterfaceStyle == .light
+            ? UIColor(red: 0.918, green: 0.933, blue: 0.957, alpha: 1)   // --page light
+            : UIColor(red: 0.027, green: 0.051, blue: 0.094, alpha: 1)   // --page dark
+    }
 
     private func load() {
         webView.load(URLRequest(url: siteURL, cachePolicy: .reloadRevalidatingCacheData))

@@ -161,6 +161,7 @@ def main():
 
         company.series, company.annual_only = xbrl_facts.build_series(facts)
         company.metrics = xbrl_facts.derive_metrics(company.series)
+        company.metrics.update(xbrl_facts.entity_size(facts))
 
         reasons = disqualify.check(company, rubric, universe)
         if reasons:

@@ -102,9 +102,10 @@
   .brand{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;letter-spacing:.16em;color:var(--ink);white-space:nowrap}
   .brand span{color:var(--gold)}
   .hspace{flex:1}
-  .iconbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--border);
+  /* 44px minimum: Apple's Human Interface Guidelines tap-target size. */
+  .iconbtn{width:44px;height:44px;border-radius:11px;border:1px solid var(--border);
     background:var(--card-b);display:grid;place-items:center;color:var(--ink-2);flex:none}
-  .iconbtn svg{width:16px;height:16px}
+  .iconbtn svg{width:18px;height:18px}
   .iconbtn:hover{border-color:var(--border-2);color:var(--ink)}
   .pills{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px;
     max-width:1360px;margin-left:auto;margin-right:auto;scrollbar-width:none}
@@ -146,19 +147,24 @@
   .card h3{font-size:12px;font-weight:700;letter-spacing:.02em;margin-bottom:9px}
   .sub{font-size:10.5px;color:var(--muted);font-weight:500}
 
-  /* ── CHARTER BAND ──────────────────────────────────── */
-  .charter{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
-  .cap-wrap{display:flex;align-items:center;gap:10px}
-  .cap-track{flex:1;height:9px;border-radius:6px;background:var(--track);overflow:hidden;position:relative}
-  .cap-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--blue),var(--gold));width:0;transition:width .7s cubic-bezier(.22,1,.36,1)}
-  .cap-mark{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--crit);right:0}
-  .slots{display:flex;gap:6px;margin-top:10px}
-  .slot{flex:1;border:1px dashed var(--border-2);border-radius:9px;padding:8px 6px;
-    text-align:center;font-size:10px;color:var(--muted);min-height:52px;
-    display:flex;flex-direction:column;justify-content:center;gap:2px}
-  .slot.filled{border-style:solid;border-color:color-mix(in srgb,var(--slot) 45%,transparent);
-    background:color-mix(in srgb,var(--slot) 8%,transparent);color:var(--ink)}
-  .slot b{font-size:11px;font-weight:700;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* ── CHARTER STRIP ─────────────────────────────────── */
+  .strip{margin-top:12px;border:1px solid var(--border);border-radius:12px;
+    background:var(--card-b);overflow:hidden}
+  .strip-main{display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;
+    text-align:left;min-height:52px}
+  .strip-main:hover{background:var(--card-a)}
+  .chips{display:flex;gap:4px;flex:none}
+  .chip{width:26px;height:26px;border-radius:7px;border:1px dashed var(--border-2);
+    display:grid;place-items:center;font-size:9px;font-weight:700;color:var(--dim);
+    overflow:hidden}
+  .chip.filled{border-style:solid;border-color:color-mix(in srgb,var(--slot) 50%,transparent);
+    background:color-mix(in srgb,var(--slot) 12%,transparent);color:var(--gold-lg)}
+  .strip-txt{flex:1;font-size:11.5px;color:var(--ink-2);min-width:0}
+  .strip-txt b{color:var(--ink)}
+  .strip-go{color:var(--muted);flex:none;transition:transform .2s}
+  .strip-go svg{width:15px;height:15px}
+  .strip-main.open .strip-go{transform:rotate(90deg)}
+  .strip-more{padding:0 12px 12px}
 
   /* ── BASE RATES (never dismissible) ────────────────── */
   .baserate{border-left:3px solid var(--crit);padding-left:11px;margin-top:9px}
@@ -174,22 +180,30 @@
   .elim button{font-size:10.5px;color:var(--blue-lg);font-weight:600;text-decoration:underline;text-underline-offset:3px}
 
   /* ── QUEUE ─────────────────────────────────────────── */
-  .qrow{display:grid;gap:10px;align-items:center;padding:11px 12px;border-radius:12px;
-    border:1px solid var(--border);background:var(--card-b);margin-bottom:7px;
-    grid-template-columns:30px 1fr auto;cursor:pointer;text-align:left;width:100%}
+  /* Mobile: rank | name+meta | score on one line, then a slim dims+spark strip.
+     Stacking the chart above the score made each row half a screen tall, so you
+     could only ever see two companies at once. */
+  .qrow{display:grid;gap:3px 9px;align-items:center;padding:10px 12px;border-radius:12px;
+    border:1px solid var(--border);background:var(--card-b);margin-bottom:6px;
+    grid-template-columns:22px 1fr 52px;cursor:pointer;text-align:left;width:100%}
   .qrow:hover{border-color:var(--border-2);background:var(--card-a)}
-  .qrank{font-size:12px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+  .qrow:active{background:var(--card-a);transform:scale(.995)}
+  /* Placement is explicit throughout: auto-flow silently collides once a cell
+     spans rows, and the failure looks like a styling glitch rather than a bug. */
+  .qrank{grid-area:1/1/2/2;font-size:11px;font-weight:800;color:var(--muted);
+    font-variant-numeric:tabular-nums;align-self:start;padding-top:2px}
+  .qtitle{grid-area:1/2/2/3;min-width:0}
   .qname{font-size:13px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
-  .qmeta{font-size:10px;color:var(--muted);margin-top:2px;display:flex;flex-wrap:wrap;gap:4px 8px}
-  .qscore{text-align:right}
-  .qscore b{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;display:block;line-height:1}
-  .qscore span{font-size:9px;color:var(--muted);font-weight:600;letter-spacing:.04em}
-  .dims{display:flex;gap:2px;margin-top:7px;grid-column:1/-1}
+  .qmeta{font-size:10px;color:var(--muted);margin-top:2px;display:flex;flex-wrap:wrap;gap:2px 7px}
+  .qscore{grid-area:1/3/2/4;text-align:right;align-self:start}
+  .qscore b{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;display:block;line-height:1.1}
+  .qscore span{font-size:8px;color:var(--muted);font-weight:600;letter-spacing:.04em}
+  .dims{grid-area:2/1/3/4;display:flex;gap:2px;margin-top:6px}
   .dims i{height:4px;border-radius:2px;background:var(--track);flex:1;position:relative;overflow:hidden}
   .dims i::after{content:'';position:absolute;inset:0 auto 0 0;width:var(--w,0%);
     background:var(--c);border-radius:2px;transition:width .8s cubic-bezier(.22,1,.36,1)}
-  .qspark{grid-column:1/-1;margin-top:6px}
-  .qflags{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px;grid-column:1/-1}
+  .qspark{grid-area:3/1/4/4;margin-top:2px;opacity:.85}
+  .qflags{grid-area:4/1/5/4;display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
   .flag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;
     background:color-mix(in srgb,var(--crit) 13%,transparent);color:var(--crit);
     border:1px solid color-mix(in srgb,var(--crit) 26%,transparent)}
@@ -211,9 +225,14 @@
   .case li{font-size:11.5px;line-height:1.6;color:var(--ink-2);padding:7px 0;
     border-top:1px solid var(--border)}
   .case li:first-child{border-top:none;padding-top:0}
-  .case li a{font-size:9.5px;font-weight:600;text-decoration:none;
-    display:inline-flex;align-items:center;gap:3px;margin-left:5px;white-space:nowrap}
+  /* Padded out to a comfortable tap size without disturbing the line flow. */
+  .case li a{font-size:10px;font-weight:600;text-decoration:none;
+    display:inline-flex;align-items:center;gap:3px;white-space:nowrap;
+    padding:6px 8px;margin:-4px 0 -4px 2px;border-radius:6px;
+    background:color-mix(in srgb,var(--blue) 10%,transparent)}
   .case li a::after{content:'↗'}
+  .case li a:active{background:color-mix(in srgb,var(--blue) 22%,transparent)}
+  .back{padding:8px 10px 8px 0;margin-left:-2px}
 
   .summary{background:var(--inset);border-radius:12px;padding:13px;margin-top:12px;
     border:1px solid var(--border)}
@@ -277,11 +296,15 @@
     .wrap,.hrow,.pills,.standing{padding-left:20px;padding-right:20px}
     .charter{grid-template-columns:1.4fr 1fr;align-items:start}
     .cases{grid-template-columns:1fr 1fr;align-items:start}
-    .qrow{grid-template-columns:34px minmax(180px,1fr) 96px 150px 64px}
-    .dims{grid-column:auto;margin-top:0;gap:3px}
+    /* One row on desktop: rank | name | dims | spark | score. */
+    .qrow{grid-template-columns:34px minmax(180px,1fr) 96px 150px 64px;gap:12px}
+    .qrank{grid-area:1/1/2/2;align-self:center;padding-top:0}
+    .qtitle{grid-area:1/2/2/3}
+    .dims{grid-area:1/3/2/4;margin-top:0;gap:3px;align-self:center}
     .dims i{height:18px;border-radius:3px}
-    .qspark{grid-column:auto;margin-top:0}
-    .qflags{grid-column:2/-1;margin-top:4px}
+    .qspark{grid-area:1/4/2/5;margin-top:0;align-self:center}
+    .qscore{grid-area:1/5/2/6;align-self:center}
+    .qflags{grid-area:2/2/3/6;margin-top:4px}
     .dhead h1{font-size:26px}
   }
   @media(min-width:1180px){
@@ -365,6 +388,17 @@
     return s+'$'+a.toFixed(0);
   }
   function pct(v,d){return v==null||isNaN(v)?'—':(v*100).toFixed(d==null?1:d)+'%';}
+
+  /* Size, not valuation. EntityPublicFloat is filed annually on the 10-K cover
+     as of the prior June, so it is a band with a date attached - never a
+     current market capitalisation and never an input to the score. */
+  function sizeBand(v){
+    if(!v)return '';
+    var label=v>=1e10?'mega':(v>=2e9?'large':(v>=3e8?'mid':'small'));
+    return '<span data-tip="Size band|Public float '+money(v)+
+      '. Filed annually on the 10-K cover, as of the prior June — a size indicator, '+
+      'not a current valuation.">'+label+' cap</span>';
+  }
   function num(v,d){return v==null||isNaN(v)?'—':v.toFixed(d==null?0:d);}
 
   /* ── STATE ──────────────────────────────────────────── */
@@ -573,39 +607,45 @@
     var n=new Date(),m=n.getMonth();
     return (m===5||m===11);
   }
+  /* A compact strip, not three full-height cards. The charter context matters,
+     but making you scroll two thousand pixels past it to reach the first
+     company is how a tool stops getting opened. Detail is one tap away and the
+     base rates still sit on the page, below the queue. */
   function charterBand(){
     var held=Object.keys(POS);
+    var open=viewingWindow();
     var slots='';
     for(var i=0;i<4;i++){
       var slug=held[i];
-      if(slug){
-        var p=POS[slug];
-        slots+='<div class="slot filled"><b>'+esc(p.name||slug)+'</b>conf '+esc(p.confidence||'—')+'/5</div>';
-      }else{
-        slots+='<div class="slot">empty</div>';
-      }
+      slots+=slug
+        ? '<span class="chip filled" data-tip="'+esc(POS[slug].name||slug)+'|confidence '+
+            esc(POS[slug].confidence||'—')+'/5">'+esc((POS[slug].ticker||POS[slug].name||'').slice(0,6))+'</span>'
+        : '<span class="chip">·</span>';
     }
-    var pctFull=held.length/4*100;
-    var open=viewingWindow();
-    return '<div class="charter">'+
-      '<div class="card reveal"><h3>Learning sleeve</h3>'+
-        '<div class="cap-wrap"><div class="cap-track"><div class="cap-fill" style="width:'+pctFull+'%"></div>'+
-        '<div class="cap-mark"></div></div><span class="mono tnum" style="font-size:11px;font-weight:700">'+
-        held.length+'/4</span></div>'+
-        '<div class="slots">'+slots+'</div>'+
-        '<p class="sub" style="margin-top:9px;line-height:1.5">Charter rule 5 caps this sleeve at 10% of the '+
-        'portfolio and at two to four companies. A fifth requires clearing one first.</p>'+
+    return '<div class="strip reveal">'+
+      '<button class="strip-main" id="stripBtn" aria-expanded="false">'+
+        '<span class="chips">'+slots+'</span>'+
+        '<span class="strip-txt"><b>'+held.length+' of 4</b> slots · '+
+          '<span style="color:var('+(open?'--good':'--warn')+')">window '+(open?'open':'closed')+'</span></span>'+
+        '<span class="strip-go">'+svg('go')+'</span>'+
+      '</button>'+
+      '<div class="strip-more" id="stripMore" hidden>'+
+        '<p class="sub" style="line-height:1.55">Charter rule 5 caps this sleeve at 10% of the portfolio '+
+        'and at two to four companies. A fifth requires clearing one first.</p>'+
+        '<p class="sub" style="line-height:1.55;margin-top:7px">'+
+        (open?'Rule 2: this is one of the two months you look — end of June and end of December.'
+             :'Rule 2: the positions view is out of reach until end of June or end of December. '+
+              'Research stays open all year; the objection is to watching your P&amp;L, not to working.')+
+        ' <i>Benartzi &amp; Thaler, QJE 1995.</i></p>'+
       '</div>'+
-      '<div class="card reveal"><h3>Viewing window</h3>'+
-        '<p style="font-size:12px;line-height:1.6;color:var(--ink-2)">'+
-        (open?'<b style="color:var(--good)">Open.</b> This is one of the two months you look — end of June and end of December.'
-             :'<b style="color:var(--warn)">Closed.</b> Rule 2 puts the positions view out of reach until end of June or end of December. Research stays open all year; the objection is to watching your P&amp;L, not to working.')+
-        '</p>'+
-        '<p class="sub" style="margin-top:8px;line-height:1.5">Benartzi &amp; Thaler, <i>Myopic Loss Aversion and the '+
-        'Equity Premium Puzzle</i>, QJE 1995.</p>'+
-      '</div>'+
-      '<div class="card reveal"><h3>The base rate</h3>'+baseRates()+'</div>'+
     '</div>';
+  }
+
+  function baseRateSection(){
+    return '<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('scale')+'</span>'+
+      '<div><h2>The base rate</h2><p>What the odds are before you start</p></div>'+
+      '<div class="line"></div></div>'+
+      '<div class="card reveal">'+baseRates()+'</div></section>';
   }
   function baseRates(){
     var rates=(L&&L.base_rates)||[];
@@ -631,6 +671,7 @@
     if(c.listed_years!=null)meta.push('listed '+num(c.listed_years,1)+'y');
     if(c.revenue_growth!=null)meta.push('rev '+(c.revenue_growth>=0?'+':'')+pct(c.revenue_growth,0));
     if(c.gross_margin!=null)meta.push('gm '+pct(c.gross_margin,0));
+    if(c.public_float)meta.push(sizeBand(c.public_float));
     if(c.cash_flow_positive)meta.push('<span style="color:var(--good)">cash generative</span>');
     else if(c.runway_months!=null)meta.push('<span style="color:'+
       (c.runway_months<24?'var(--warn)':'var(--muted)')+'">'+num(c.runway_months)+'mo runway</span>');
@@ -640,11 +681,12 @@
     // the 34px rank column and renders as unreadable dots.
     return '<button class="qrow reveal" data-slug="'+esc(c.slug)+'">'+
       '<div class="qrank tnum">'+c.rank+'</div>'+
-      '<div><div class="qname">'+esc(c.name)+'</div><div class="qmeta">'+meta.join('<span>·</span>')+'</div></div>'+
+      '<div class="qtitle"><div class="qname">'+esc(c.name)+'</div>'+
+      '<div class="qmeta">'+meta.join('<span>·</span>')+'</div></div>'+
+      '<div class="qscore"><b class="tnum">'+num(c.score,1)+'</b><span>PRIORITY</span></div>'+
       '<div class="dims">'+dims+'</div>'+
       '<svg class="spark qspark" data-spark="'+(c.spark_revenue||[]).join(',')+'" data-color="blue" '+
-        'style="width:100%;height:28px" aria-label="Revenue trend"></svg>'+
-      '<div class="qscore"><b class="tnum">'+num(c.score,1)+'</b><span>PRIORITY</span></div>'+
+        'style="width:100%;height:22px" aria-label="Revenue trend"></svg>'+
       (flags?'<div class="qflags">'+flags+'</div>':'')+
     '</button>';
   }
@@ -723,6 +765,20 @@
 
     h+='<div class="summary reveal">'+sum.map(function(s){return '<p>'+esc(s)+'</p>';}).join('')+
        '<div class="note">'+esc((d.summary&&d.summary.note)||'')+'</div></div>';
+
+    var mm=d.metrics||{};
+    h+='<div class="card reveal" style="margin-top:10px"><h3>Size, and what is missing</h3>'+
+      '<div style="display:flex;gap:18px;flex-wrap:wrap">'+
+      (mm.public_float?'<div><b class="tnum" style="font-size:16px">'+money(mm.public_float)+'</b>'+
+        '<div class="sub">public float, as of '+esc(mm.public_float_asof||'—')+'</div></div>':'')+
+      (mm.revenue_ttm?'<div><b class="tnum" style="font-size:16px">'+money(mm.revenue_ttm)+'</b>'+
+        '<div class="sub">revenue, trailing year</div></div>':'')+
+      '</div>'+
+      '<p class="sub" style="margin-top:9px;line-height:1.55"><b>There is no current price here, '+
+      'and therefore no valuation.</b> Public float is filed once a year on the 10-K cover, stated '+
+      'as of the prior June, so it is a size band and nothing more. Free live-price sources are '+
+      'either gone or behind bot challenges. Whether this company is cheap is a question this tool '+
+      'does not answer — check the price yourself before it matters.</p></div>';
 
     h+='<div class="cases">'+
        '<div class="case bull reveal"><h3>'+svg('up')+'Why this could work</h3><ul>'+
@@ -1012,7 +1068,13 @@
       return;
     }
     if(hash==='#/review'){view.innerHTML=renderReview();hydrate();window.scrollTo(0,0);return;}
-    view.innerHTML=charterBand()+renderQueue()+renderCoverage();
+    view.innerHTML=charterBand()+renderQueue()+baseRateSection()+renderCoverage();
+    var sb=$('#stripBtn');
+    if(sb)sb.addEventListener('click',function(){
+      var more=$('#stripMore'),open=more.hidden;
+      more.hidden=!open;this.setAttribute('aria-expanded',String(open));
+      this.classList.toggle('open',open);
+    });
     var why=$('#whyBtn');
     if(why)why.addEventListener('click',function(){
       var box=$('#whyBox');box.hidden=!box.hidden;
