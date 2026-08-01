@@ -144,7 +144,13 @@ def main():
     survivors, disqualified, dq_counts, skipped = [], [], {}, []
 
     # Stage 2: financials, only for companies that passed the age filter.
-    for company in young:
+    for examined, company in enumerate(young, 1):
+        # Logged here rather than after scoring: a disqualified company skips
+        # the rest of the loop, so a counter further down only reports when the
+        # hundredth examined company happens to be a survivor.
+        if examined % 50 == 0:
+            log("  %d/%d examined - %d survive, %d eliminated"
+                % (examined, len(young), len(survivors), len(disqualified)))
         try:
             facts = xbrl_facts.fetch_facts(session, company.cik)
         except Exception as exc:  # noqa: BLE001
@@ -190,10 +196,6 @@ def main():
             skipped.append((company.name, str(exc)))
             continue
         survivors.append(company)
-
-        if (len(survivors) + len(disqualified)) % 100 == 0:
-            log("  %d survive, %d eliminated"
-                % (len(survivors), len(disqualified)))
 
     ordered = engine.rank(survivors)
     log("scored %d survivors, eliminated %d%s"

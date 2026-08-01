@@ -786,6 +786,26 @@
         'that matters most is the thing we know least about here — weigh the rest accordingly.</p></div></section>';
     }
 
+    // Cost gate: dossier 4.4 puts the bar at total costs below 0.5% of the
+    // amount invested, with CHF 500-1,000 minimum orders. Foreign stamp duty is
+    // double the Swiss rate and an FX leg applies.
+    var foreign=!(d.exchanges||[]).some(function(x){return /six|swiss/i.test(x);});
+    var cost=orderCost(COSTS?COSTS.recommended_order_chf:1000,foreign);
+    h+='<div class="card reveal" style="margin-top:14px"><h3>What an order would cost</h3>'+
+      '<div style="display:flex;gap:18px;flex-wrap:wrap">'+
+        '<div><b class="tnum" style="font-size:16px">CHF '+num(cost.total,2)+'</b>'+
+          '<div class="sub">on a CHF '+(COSTS?COSTS.recommended_order_chf:1000)+' order</div></div>'+
+        '<div><b class="tnum" style="font-size:16px;color:'+
+          (cost.pct<=cost.limit?'var(--good)':'var(--crit)')+'">'+pct(cost.pct,2)+'</b>'+
+          '<div class="sub">of the amount, limit '+pct(cost.limit,1)+'</div></div>'+
+      '</div>'+
+      '<p class="sub" style="margin-top:9px;line-height:1.55">'+
+      (foreign?'Foreign security: 0.15% stamp duty plus an FX leg.'
+             :'Swiss security: 0.075% stamp duty, no FX leg.')+
+      (cost.pct>cost.limit?' <b style="color:var(--crit)">Above the 0.5% bar — an order of about CHF '+
+        cost.minClearing+' would clear it.</b>':'')+
+      '</p></div>';
+
     h+='<div class="accept">'+
       '<div class="conf" id="conf">'+[1,2,3,4,5].map(function(n){
         return '<button data-c="'+n+'" aria-pressed="'+(held&&held.confidence===n?'true':'false')+'">'+n+'</button>';
@@ -865,10 +885,13 @@
           'on what you do next.</p></div>';
         }else if(state.near.length){
           h+='<div style="margin-top:10px">'+state.near.map(function(n){
+            // Say which side of the line it is on. "within 12% of the line" reads
+            // as trouble even when the company is comfortably clear of it.
+            var side=n.t.comparison==='below'?'above the floor':'below the ceiling';
             return '<div class="trig" style="margin-bottom:6px;border-color:var(--warn)">'+
               '<div class="trig-lab">'+esc(n.t.label)+'</div>'+
               '<div class="trig-now" style="margin-top:4px">now '+esc(fmtMetric(n.t.metric,n.v))+
-              ' — within '+pct(n.margin,0)+' of the line</div></div>';
+              ' — '+pct(n.margin,0)+' '+side+', closer than it was</div></div>';
           }).join('')+'</div>';
         }else{
           h+='<p class="sub" style="margin-top:9px;color:var(--good)">No trigger near firing.</p>';
