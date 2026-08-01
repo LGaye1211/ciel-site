@@ -1142,6 +1142,10 @@
   function fmtMetric(metric,v){
     if(v==null)return '—';
     if(metric==='runway_months')return num(v)+' months';
+    // Debt to equity is a multiple, not a proportion. Formatted as a
+    // percentage it read "now 950.0%" against a threshold shown as "1.00",
+    // which is the same number stated two incompatible ways.
+    if(metric==='debt_to_equity')return num(v,2)+'×';
     return pct(v);
   }
 
