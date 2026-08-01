@@ -7,3 +7,4 @@ Payload/
 *.ipa
 # Generated from ios/CielSleeve/project.yml by XcodeGen at build time.
 ios/CielSleeve/CielSleeve.xcodeproj/
+ios/CielSleeve/Info.plist
