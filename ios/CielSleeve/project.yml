@@ -10,6 +10,14 @@ options:
   deploymentTarget:
     iOS: '15.0'
   createIntermediateGroups: true
+  # Pinned deliberately. XcodeGen is installed unpinned from Homebrew, and its
+  # default moved to `xcode16_0` - object format 77 - which Xcode 15.4 on the
+  # macos-14 runner cannot open at all: "the project is in a future Xcode
+  # project file format (77)". The build died before compiling a single line.
+  # A floating generator writing for a pinned toolchain will break again the
+  # next time either end moves, so the format is stated here rather than
+  # inherited. Xcode 16 reads this format; Xcode 15 reads only this one.
+  projectFormat: xcode15_0
 
 settings:
   base:
