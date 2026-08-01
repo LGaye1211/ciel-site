@@ -1,0 +1,55 @@
+name: Sleeve — rates and prices
+
+# Separate from the filings scan on purpose. Exchange rates move daily and the
+# filings scan is quarterly; running them together would mean either a stale
+# franc rate or an hour of needless SEC traffic. This job takes seconds and
+# rewrites one small file.
+#
+# Rates need no key and always run, which is what keeps the buy ticket working
+# out of the box. Share prices need PRICE_API_KEY as a repository secret; with
+# no secret the job still succeeds and simply writes rates, and the portfolio
+# reports holdings and cost without pretending to know a value.
+
+on:
+  schedule:
+    # Weekdays after the US close, so the last close is the previous session's
+    # and not a half-formed intraday number.
+    - cron: '30 21 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sleeve-prices
+  cancel-in-progress: true
+
+jobs:
+  prices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          # No pip step: the scanner is standard library only.
+
+      - name: Fetch rates and prices
+        env:
+          PRICE_API_KEY: ${{ secrets.PRICE_API_KEY }}
+          PRICE_PROVIDER: ${{ vars.PRICE_PROVIDER || 'finnhub' }}
+        run: python3 scanner/prices.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/sleeve/prices.json
+          # write_json only rewrites the file when the content actually
+          # differs, so a quiet day produces no commit at all rather than a
+          # daily no-op in the history.
+          git diff --cached --quiet && echo "no change" && exit 0
+          git commit -m "sleeve: rates and prices $(date -u +%Y-%m-%d)"
+          git push

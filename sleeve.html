@@ -455,6 +455,7 @@
     <div class="brand">CIEL <span>· SLEEVE</span></div>
     <div class="hspace"></div>
     <button class="iconbtn" id="pfBtn" title="Portfolio" aria-label="Portfolio"></button>
+    <button class="iconbtn" id="monthBtn" title="This month" aria-label="This month"></button>
     <button class="iconbtn" id="reviewBtn" title="Reviews" aria-label="Reviews"></button>
     <button class="iconbtn" id="setBtn" title="Settings" aria-label="Settings"></button>
     <button class="iconbtn" id="themeBtn" title="Theme" aria-label="Toggle theme"></button>
@@ -693,6 +694,8 @@
     try{localStorage.setItem(TKEY,n);}catch(e){} setTheme(n);});
   $('#pfBtn').innerHTML=svg('wallet');
   $('#pfBtn').addEventListener('click',function(){location.hash='#/portfolio';});
+  $('#monthBtn').innerHTML=svg('clock');
+  $('#monthBtn').addEventListener('click',function(){location.hash='#/month';});
   $('#reviewBtn').innerHTML=svg('book');
   $('#reviewBtn').addEventListener('click',function(){location.hash='#/review';});
   $('#setBtn').innerHTML=svg('shield');
@@ -1336,6 +1339,131 @@
       'tool exists to answer honestly. The dossier expects the answer to be no.</p></div>';
     h+='</section>';
     return h;
+  }
+
+  /* ── MONTHLY REVIEW ─────────────────────────────────
+     Monthly on the businesses, not on the money. The dossier is emphatic that
+     watching a portfolio's value often makes you worse at holding it - rule 2
+     and Benartzi and Thaler on myopic loss aversion - and just as emphatic
+     that the learning sleeve exists to be read and followed. Those only
+     conflict if "review" means "check the price". So this reads the filings:
+     what the company reported, what moved since you bought, how far each
+     trigger now sits from its line. Value stays on the portfolio screen, on
+     the charter's own schedule. */
+  var RKEY='ciel-sleeve-reviews';
+  function reviewLog(){try{return JSON.parse(localStorage.getItem(RKEY)||'{}');}catch(e){return {};}}
+  function monthKey(d){d=d||new Date();return d.getUTCFullYear()+'-'+
+    String(d.getUTCMonth()+1).padStart(2,'0');}
+  function markReviewed(period){
+    var log=reviewLog();log[period]={at:new Date().toISOString()};
+    try{localStorage.setItem(RKEY,JSON.stringify(log));}catch(e){}
+    var path='charter/reviews/'+period+'.json';
+    var payload={period:period,reviewed_at:log[period].at,
+      holdings:Object.keys(POS).filter(function(s){return POS[s].invested_chf;})};
+    var msg='sleeve: monthly review '+period;
+    if(ghConfig())ghPut(path,payload,msg).catch(function(){
+      queuePending({path:path,payload:payload,message:msg});});
+    else queuePending({path:path,payload:payload,message:msg});
+  }
+
+  /* Distance to the line as a share of the threshold, so unrelated metrics can
+     be ranked against one another. */
+  function triggerDistance(t,v){
+    if(v==null||!t.threshold)return null;
+    return (t.comparison==='below')?(v-t.threshold)/Math.abs(t.threshold)
+                                   :(t.threshold-v)/Math.abs(t.threshold);
+  }
+
+  function renderMonthly(){
+    var slugs=Object.keys(POS).filter(function(s){return POS[s].invested_chf;});
+    var period=monthKey(),done=reviewLog()[period];
+    var h='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('clock')+'</span>'+
+      '<div><h2>This month</h2><p>What the companies did — not what the price did</p></div>'+
+      '<div class="line"></div></div>';
+
+    if(!slugs.length){
+      h+='<div class="card reveal"><p class="sub" style="line-height:1.65">Nothing held, so there '+
+        'is nothing to review. The monthly habit is worth building before there is money in it.</p>'+
+        '</div></section>';
+      return h;
+    }
+
+    h+='<div class="card reveal"><div class="sub" style="line-height:1.6">'+
+      '<b style="color:var(--ink)">'+esc(period)+'</b> · '+slugs.length+' holding'+
+      (slugs.length>1?'s':'')+' · '+
+      (done?'reviewed '+esc(done.at.slice(0,10)):'not yet reviewed')+
+      '<br>Reading the filings monthly is the habit the charter asks for. Checking what the '+
+      'holding is <i>worth</i> monthly is the habit it warns against — that stays on the '+
+      'portfolio screen, on its own schedule.</div></div>';
+
+    slugs.forEach(function(s){
+      var p=POS[s],state=checkTriggers(p),live=state.live;
+      h+='<div class="card reveal" style="margin-top:10px'+
+        (state.fired.length?';border-left:3px solid var(--crit)':'')+'">'+
+        '<h3><a href="#/c/'+esc(s)+'">'+esc(p.name||s)+'</a></h3>';
+
+      if(state.stale){
+        h+='<p class="sub" style="color:var(--warn);line-height:1.6;margin-top:6px">Not in the '+
+          'latest scan. Going-concern doubt, a restatement or a collapse in reporting quality all '+
+          'remove a company from the universe, so this is worth opening the filings for '+
+          'yourself.</p></div>';
+        return;
+      }
+
+      h+='<div class="totals" style="padding:8px 0 2px">'+
+        '<div><b>'+(live.revenue_growth==null?'—':pct(live.revenue_growth,1))+
+          '</b><span class="sub">revenue, year on year</span></div>'+
+        '<div><b>'+(live.gross_margin==null?'—':pct(live.gross_margin,1))+
+          '</b><span class="sub">gross margin</span></div>'+
+        '<div><b>'+(live.dilution==null?'—':pct(live.dilution,1))+
+          '</b><span class="sub">more shares</span></div>'+
+        '<div><b>'+(live.cash_flow_positive?'self-funding':
+          (live.runway_months==null?'—':num(live.runway_months)+' mo'))+
+          '</b><span class="sub">cash position</span></div>'+
+      '</div>';
+
+      var m0=p.metrics_at_accept||{},moves=[];
+      [['revenue_growth_yoy','Revenue growth',live.revenue_growth],
+       ['gross_margin','Gross margin',live.gross_margin],
+       ['dilution_yoy','Dilution',live.dilution]].forEach(function(row){
+        var then=m0[row[0]],now=row[2];
+        if(then==null||now==null)return;
+        var delta=now-then;
+        if(Math.abs(delta)<0.005)return;
+        moves.push('<li>'+esc(row[1])+' '+(delta>0?'up':'down')+' '+pct(Math.abs(delta),1)+
+          ' since you bought — '+pct(then,1)+' then, '+pct(now,1)+' now</li>');
+      });
+      h+=moves.length
+        ? '<ul class="gaps" style="margin-top:8px">'+moves.join('')+'</ul>'
+        : '<p class="sub" style="margin-top:8px">Nothing has moved materially since you bought.</p>';
+
+      h+='<div style="margin-top:10px">'+(p.triggers||[]).map(function(t){
+        var hit=state.fired.filter(function(f){return f.t===t;})[0];
+        var nearHit=state.near.filter(function(n){return n.t===t;})[0];
+        var blind=(state.unchecked||[]).filter(function(u){return u.t===t;})[0];
+        if(hit)return '<div class="trig fired" style="margin-bottom:6px">'+
+          '<div class="trig-lab">'+esc(t.label)+' <span class="flag">FIRED</span></div>'+
+          '<div class="trig-now" style="margin-top:4px">now '+esc(fmtMetric(t.metric,hit.v))+
+          ' · you set '+esc(t.threshold_display||'')+'</div></div>';
+        if(blind)return '<div class="trig" style="margin-bottom:6px;opacity:.62">'+
+          '<div class="trig-lab">'+esc(t.label)+'</div>'+
+          '<div class="trig-now" style="margin-top:4px">not checkable from the scan</div></div>';
+        var d=nearHit?triggerDistance(t,nearHit.v):null;
+        return '<div class="trig" style="margin-bottom:6px'+
+          (d!=null?';border-color:var(--warn)':'')+'">'+
+          '<div class="trig-lab">'+esc(t.label)+'</div>'+
+          '<div class="trig-now" style="margin-top:4px">'+
+          (d==null?'clear of the line':pct(Math.abs(d),0)+' from the line')+'</div></div>';
+      }).join('')+'</div></div>';
+    });
+
+    h+='<div class="card reveal" style="margin-top:12px">'+
+      '<p class="sub" style="line-height:1.6;margin-bottom:10px">Marking the month read records '+
+      'the date and the holdings, nothing more. It is evidence that you looked, so the annual '+
+      'review can report how often you actually did.</p>'+
+      '<button class="btn-primary" id="monthDone"'+(done?' disabled':'')+'>'+
+      (done?'Marked read':'Mark '+esc(period)+' as read')+'</button></div>';
+    return h+'</section>';
   }
 
   /* ── PORTFOLIO ──────────────────────────────────────
@@ -1992,6 +2120,14 @@
     }
     askSetCompany(null);
     if(hash==='#/portfolio'){view.innerHTML=renderPortfolio();hydrate();window.scrollTo(0,0);return;}
+    if(hash==='#/month'){
+      view.innerHTML=renderMonthly();
+      var done=$('#monthDone');
+      if(done)done.addEventListener('click',function(){
+        markReviewed(monthKey());route();
+      });
+      hydrate();window.scrollTo(0,0);return;
+    }
     if(hash==='#/review'){view.innerHTML=renderReview();hydrate();window.scrollTo(0,0);return;}
     view.innerHTML=charterBand()+renderQueue()+baseRateSection()+renderCoverage();
     var sb=$('#stripBtn');
