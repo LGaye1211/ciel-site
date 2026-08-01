@@ -72,18 +72,27 @@ jobs:
           path: CielSleeve-unsigned.ipa
           retention-days: 90
 
-      - name: Attach to release
-        if: startsWith(github.ref, 'refs/tags/')
+      # Published as a release rather than only as a workflow artifact: an
+      # artifact is a login-gated zip, which is painful to get onto a phone. A
+      # release asset is a direct download link.
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('ios-build-{0}', github.run_number) }}
+          name: CIEL Sleeve — unsigned iOS build
           files: CielSleeve-unsigned.ipa
           body: |
             Unsigned build of the CIEL learning-sleeve terminal.
 
-            Install by re-signing with Sideloadly or AltStore. A free Apple ID
-            gives a 7-day certificate that needs periodic refresh; a paid
-            developer account gives a year. That is a property of iOS, not of
-            this build.
+            **This file cannot be installed as-is.** iOS refuses unsigned apps,
+            so it has to be re-signed with your own Apple ID first:
 
-            The app loads the live site, so scanner updates arrive without
-            rebuilding or re-installing.
+            - **From a computer** — Sideloadly (Windows/macOS) or AltStore.
+            - **From the phone alone** — an on-device signer such as ESign or
+              Feather, using your own free Apple ID.
+
+            A free Apple ID gives a 7-day certificate and needs refreshing; a
+            paid developer account gives a year. That is iOS, not this build.
+
+            The app is a WKWebView pointed at the live site, so every scanner
+            update arrives without rebuilding or re-installing this.
