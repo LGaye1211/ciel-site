@@ -158,6 +158,14 @@ def company_dossier(company):
         "annual_only": getattr(company, "annual_only", False),
         "edgar_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=%s&type=10-K"
                      % company.cik10,
+        # What the company actually does, in its own words from the 10-K, plus
+        # the corporate story, the quarter-by-quarter table, material events and
+        # legal exposure.
+        "narrative": company.narrative or {},
+        "story": company.story[-24:],
+        "quarterly": company.quarterly,
+        "events": company.events[:24],
+        "legal_events": company.legal,
         "summary": company.thesis.get("summary", {}),
         "bull": company.thesis.get("bull", [])[:MAX_CASE_ITEMS],
         "bear": company.thesis.get("bear", [])[:MAX_CASE_ITEMS],
@@ -179,6 +187,12 @@ def company_dossier(company):
 
 def trim_dossier(dossier):
     """Drop the least informative content until the record fits its budget."""
+    dossier["story"] = dossier.get("story", [])[-10:]
+    dossier["events"] = dossier.get("events", [])[:10]
+    dossier["quarterly"] = dossier.get("quarterly", [])[:6]
+    narrative = dossier.get("narrative") or {}
+    if narrative.get("business"):
+        narrative["business"] = narrative["business"][:900] + " …"
     dossier["team"] = dossier.get("team", [])[:8]
     dossier["bull"] = dossier.get("bull", [])[:6]
     dossier["bear"] = dossier.get("bear", [])[:8]

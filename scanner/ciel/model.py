@@ -143,6 +143,11 @@ class Company:
     description: str = ""
     website: str = ""
     recent_filings: list = field(default_factory=list)
+    events: list = field(default_factory=list)
+    story: list = field(default_factory=list)
+    quarterly: list = field(default_factory=list)
+    legal: list = field(default_factory=list)
+    narrative: dict = field(default_factory=dict)
 
     # Derived quarterly series, keyed by our own metric name.
     series: dict = field(default_factory=dict)

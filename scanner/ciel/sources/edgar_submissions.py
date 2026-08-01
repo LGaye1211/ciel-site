@@ -66,10 +66,19 @@ def fetch_company(session, cik, fallback_name=""):
     company.country = _country(payload)
 
     docs = recent.get("primaryDocument", []) or []
+    items = recent.get("items", []) or []
+    # 8-K item codes ride along in the submissions record, so the material-event
+    # timeline costs no additional requests.
+    while len(items) < len(forms):
+        items.append("")
+    # Not truncated: ownership filings dominate by count (JFrog alone has 431
+    # Form 4s), so slicing the head of this list drops the S-1 and the IPO
+    # prospectus - exactly the filings the funding story is built from. Each
+    # entry is a small dict and the list is capped at 1000 by EDGAR itself.
     company.recent_filings = [
-        {"form": f, "date": d, "accession": a, "primary_document": p}
-        for f, d, a, p in zip(forms, dates, accns, docs)
-    ][:400]
+        {"form": f, "date": d, "accession": a, "primary_document": p, "items": it}
+        for f, d, a, p, it in zip(forms, dates, accns, docs, items)
+    ]
     company.entity_category = (payload.get("category") or "").lower()
     company.description = payload.get("description") or ""
     company.website = payload.get("website") or ""

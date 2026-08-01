@@ -266,6 +266,33 @@
   .btn-primary:disabled{opacity:.4;cursor:not-allowed;background:var(--track);color:var(--muted)}
   .blocked{font-size:10.5px;color:var(--crit);margin-top:7px;line-height:1.5;font-weight:600}
 
+  /* ── QUARTERLY TABLE ───────────────────────────────── */
+  .qtable{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .qhead,.qline{display:grid;grid-template-columns:64px 1fr 52px 50px 1fr 22px;
+    gap:8px;align-items:center;padding:8px 14px;min-width:400px}
+  .qhead{font-size:9px;font-weight:700;letter-spacing:.05em;color:var(--muted);
+    text-transform:uppercase;border-bottom:1px solid var(--border)}
+  .qline{font-size:11px;border-bottom:1px solid var(--border)}
+  .qline:last-child{border-bottom:none}
+  .qline span:nth-child(n+2){text-align:right}
+  .qline a{text-decoration:none;font-size:12px}
+
+  /* ── TIMELINE ──────────────────────────────────────── */
+  .tl{display:grid;grid-template-columns:72px 8px 1fr;gap:9px;align-items:baseline;
+    padding:7px 0;border-top:1px solid var(--border);text-decoration:none;color:inherit}
+  .tl:first-child{border-top:none}
+  .tl:hover{background:color-mix(in srgb,var(--blue) 6%,transparent)}
+  .tl-d{font-size:10px;color:var(--muted);white-space:nowrap}
+  .tl-b{width:7px;height:7px;border-radius:50%;background:var(--blue);align-self:center}
+  .tl-b[data-t="crit"]{background:var(--crit)}
+  .tl-b[data-t="warn"]{background:var(--warn)}
+  .tl-b[data-t="good"]{background:var(--good)}
+  .tl-b[data-k="listing"]{background:var(--gold)}
+  .tl-b[data-k="funding"]{background:var(--good)}
+  .tl-b[data-k="finance"]{background:var(--warn)}
+  .tl-b[data-k="governance"]{background:var(--muted)}
+  .tl-t{font-size:11.5px;line-height:1.45;color:var(--ink-2)}
+
   /* ── COVERAGE ──────────────────────────────────────── */
   .gaps li{font-size:11px;line-height:1.6;color:var(--ink-2);padding:7px 0 7px 16px;
     border-top:1px solid var(--border);position:relative;list-style:none}
@@ -765,6 +792,93 @@
 
     h+='<div class="summary reveal">'+sum.map(function(s){return '<p>'+esc(s)+'</p>';}).join('')+
        '<div class="note">'+esc((d.summary&&d.summary.note)||'')+'</div></div>';
+
+    /* ── THE IDEA — the company in its own words, from the 10-K ── */
+    var nar=d.narrative||{};
+    if(nar.business){
+      h+='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('book')+'</span>'+
+        '<div><h2>The idea</h2><p>From Item 1 of the annual report</p></div><div class="line"></div></div>'+
+        '<div class="card reveal"><p style="font-size:12.5px;line-height:1.7;color:var(--ink)">'+
+        esc(nar.business)+'</p>'+
+        '<p class="sub" style="margin-top:10px">Quoted from the '+esc(nar.source_form||'10-K')+
+        ' filed '+esc(nar.source_date||'')+'. '+
+        (nar.source_url?'<a href="'+esc(nar.source_url)+'" target="_blank" rel="noopener">Read the filing ↗</a>':'')+
+        '</p></div></section>';
+    }
+
+    /* ── QUARTERLY REVIEWS ── */
+    if((d.quarterly||[]).length){
+      h+='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('chart')+'</span>'+
+        '<div><h2>Quarter by quarter</h2><p>Revenue, margin, cash — each linked to its filing</p></div>'+
+        '<div class="line"></div></div><div class="card reveal" style="padding:4px 0">'+
+        '<div class="qtable"><div class="qhead">'+
+          '<span>Period</span><span>Revenue</span><span>YoY</span><span>Margin</span><span>Op. cash</span><span></span>'+
+        '</div>'+
+        d.quarterly.map(function(r){
+          return '<div class="qline">'+
+            '<span class="mono">'+esc(r.period)+'</span>'+
+            '<span class="tnum">'+money(r.revenue)+'</span>'+
+            '<span class="tnum" style="color:'+(r.growth==null?'var(--muted)':
+              (r.growth>=0?'var(--good)':'var(--crit)'))+'">'+
+              (r.growth==null?'—':(r.growth>=0?'+':'')+pct(r.growth,0))+'</span>'+
+            '<span class="tnum">'+(r.gross_margin==null?'—':pct(r.gross_margin,0))+'</span>'+
+            '<span class="tnum">'+(r.operating_cash_flow==null?'—':money(r.operating_cash_flow))+'</span>'+
+            '<span>'+(r.url?'<a href="'+esc(r.url)+'" target="_blank" rel="noopener">↗</a>':'')+'</span>'+
+          '</div>';
+        }).join('')+'</div></div></section>';
+    }
+
+    /* ── STORY: how it listed and how it has raised ── */
+    if((d.story||[]).length){
+      h+='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('clock')+'</span>'+
+        '<div><h2>The story</h2><p>Listing and funding, from the filing record</p></div>'+
+        '<div class="line"></div></div><div class="card reveal">'+
+        d.story.slice().reverse().map(function(e){
+          return '<a class="tl" href="'+esc(e.url)+'" target="_blank" rel="noopener">'+
+            '<span class="tl-d mono">'+esc(e.date)+'</span>'+
+            '<span class="tl-b" data-k="'+esc(e.kind)+'"></span>'+
+            '<span class="tl-t">'+esc(e.label)+'<span class="sub"> · '+esc(e.form)+'</span></span></a>';
+        }).join('')+'</div></section>';
+    }
+
+    /* ── MATERIAL EVENTS — the official news feed ── */
+    if((d.events||[]).length){
+      h+='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('alert')+'</span>'+
+        '<div><h2>What has happened</h2><p>8-K material events, filed within four business days</p></div>'+
+        '<div class="line"></div></div><div class="card reveal">'+
+        d.events.map(function(e){
+          return '<a class="tl" href="'+esc(e.url)+'" target="_blank" rel="noopener">'+
+            '<span class="tl-d mono">'+esc(e.date)+'</span>'+
+            '<span class="tl-b" data-t="'+esc(e.events[0].tone)+'"></span>'+
+            '<span class="tl-t">'+e.events.map(function(x){return esc(x.label);}).join(' · ')+'</span></a>';
+        }).join('')+
+        '<p class="sub" style="margin-top:10px;line-height:1.55">A company must file an 8-K within '+
+        'four business days of a material event, so this is the fastest and most reliable record '+
+        'there is — earlier than press coverage, and legally binding. It is what happened, not what '+
+        'anyone said about it.</p></div></section>';
+    }
+
+    /* ── LEGAL ── */
+    var legalText=nar.legal,legalEvents=d.legal_events||[];
+    if(legalText||legalEvents.length){
+      var material=nar.legal_material;
+      h+='<section class="zone"><div class="zone-h"><span class="zone-ic">'+svg('shield')+'</span>'+
+        '<div><h2>Legal</h2><p>Item 3 of the annual report, plus material filings</p></div>'+
+        '<div class="line"></div></div><div class="card reveal"'+
+        (material?' style="border-left:3px solid var(--warn)"':'')+'>'+
+        (legalText?'<p style="font-size:12px;line-height:1.65;color:var(--ink-2)">'+esc(legalText)+'</p>':'')+
+        (legalEvents.length?'<div style="margin-top:10px">'+legalEvents.map(function(e){
+          return '<a class="tl" href="'+esc(e.url)+'" target="_blank" rel="noopener">'+
+            '<span class="tl-d mono">'+esc(e.date)+'</span>'+
+            '<span class="tl-b" data-t="'+esc(e.tone)+'"></span>'+
+            '<span class="tl-t">'+esc(e.label)+'</span></a>';
+        }).join('')+'</div>':'')+
+        '<p class="sub" style="margin-top:10px;line-height:1.55">'+
+        (material===false?'The company states it is not party to material proceedings. '
+                         :'There is disclosed litigation here. ')+
+        'This points at what to read; it is not a judgement about any case, and the tool cannot '+
+        'make one.</p></div></section>';
+    }
 
     var mm=d.metrics||{};
     h+='<div class="card reveal" style="margin-top:10px"><h3>Size, and what is missing</h3>'+

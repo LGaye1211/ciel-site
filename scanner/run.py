@@ -25,15 +25,19 @@ from ciel.emit import build as emit                          # noqa: E402
 from ciel.http import Session                                # noqa: E402
 from ciel.score import bearcase, disqualify, engine, thesis, triggers  # noqa: E402
 from ciel.sources import edgar_submissions as subs           # noqa: E402
-from ciel.sources import ownership, xbrl_facts, xbrl_frames  # noqa: E402
+from ciel.sources import events, narrative, ownership       # noqa: E402
+from ciel.sources import xbrl_facts, xbrl_frames             # noqa: E402
 
 DATA_DIR = os.path.join(ROOT, "data", "sleeve")
 CONFIG_DIR = os.path.join(HERE, "config")
 
-# Company facts run about a megabyte each, so an unbounded cache passes a
-# gigabyte in one deep scan. actions/cache has to round-trip that on every CI
-# run, which costs more time than the requests it saves.
-CACHE_BUDGET_BYTES = 600 * 1024 * 1024
+# Company facts run about a megabyte each and 10-K documents several, so a deep
+# scan's working set is well over a gigabyte. Budgeting below that evicts
+# entries the next run immediately needs, turning every scan back into a cold
+# one - at 600MB the second run spent minutes refetching submissions it already
+# had. actions/cache allows 10GB per repository, so the headroom is worth more
+# than the storage.
+CACHE_BUDGET_BYTES = 2500 * 1024 * 1024
 
 
 def load_config(name):
@@ -82,6 +86,8 @@ def main():
     parser.add_argument("--check-budgets", action="store_true")
     parser.add_argument("--no-team", action="store_true",
                         help="skip Form 4 ownership (much faster iteration)")
+    parser.add_argument("--no-narrative", action="store_true",
+                        help="skip 10-K business descriptions (faster iteration)")
     args = parser.parse_args()
 
     universe = load_config("universe.json")
@@ -192,6 +198,12 @@ def main():
             company.thesis = thesis.build(company)
             company.thesis["bear"] = bearcase.build(company)
             company.triggers = triggers.build(company)
+            # Free: 8-K item codes, the funding story and the quarterly table
+            # all come out of the submissions record already fetched.
+            company.events = events.build_timeline(company)
+            company.story = events.build_story(company)
+            company.quarterly = events.quarterly_reviews(company)
+            company.legal = events.legal_flags(company, company.events)
         except Exception as exc:  # noqa: BLE001
             log("scoring failed for %s (%s): %s" % (company.name, company.cik, exc))
             skipped.append((company.name, str(exc)))
@@ -236,6 +248,20 @@ def main():
     size, changed = emit.write_json(os.path.join(DATA_DIR, "latest.json"), latest,
                                     emit.BUDGETS["latest.json"])
     log("latest.json %d bytes%s" % (size, "" if changed else " (unchanged)"))
+
+    # The business description is the only prose the scanner reads, and it is
+    # what turns "Services-Prepackaged Software" into what the company actually
+    # does. One 10-K each (a few MB), so it runs only for what gets published.
+    if not args.no_narrative:
+        for i, company in enumerate(ordered[:publish_n], 1):
+            try:
+                company.narrative = narrative.fetch_narrative(session, company)
+            except Exception as exc:  # noqa: BLE001
+                log("narrative failed for %s: %s" % (company.name, exc))
+            if i % 50 == 0:
+                log("  narratives %d/%d" % (i, min(len(ordered), publish_n)))
+        got = sum(1 for c in ordered[:publish_n] if (c.narrative or {}).get("business"))
+        log("business descriptions read for %d of %d" % (got, min(len(ordered), publish_n)))
 
     written = 0
     for company in ordered[:dossier_n]:
