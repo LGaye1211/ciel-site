@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wfmcp/workflow_type",
+  "title": "Workflow type",
+  "type": "object",
+  "required": ["name", "version", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "version": {"type": "integer", "minimum": 1},
+    "description": {"type": "string"},
+    "owner": {"type": "string", "description": "Team or person accountable for this workflow type"},
+    "inputs": {
+      "type": "object",
+      "description": "JSON Schema for the inputs a run is started with"
+    },
+    "notify": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "channel": {"type": "string", "description": "Default logical Teams channel for cards"},
+        "audit_channel": {"type": "string", "description": "Channel that receives every run event"}
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/step"}
+    }
+  },
+  "$defs": {
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "step": {"type": "string"},
+        "output": {"type": "string"},
+        "input": {"type": "string"},
+        "eq": {}, "ne": {}, "lt": {"type": "number"}, "gt": {"type": "number"},
+        "in": {"type": "array"}, "exists": {"type": "boolean"},
+        "all": {"type": "array", "items": {"$ref": "#/$defs/condition"}},
+        "any": {"type": "array", "items": {"$ref": "#/$defs/condition"}}
+      }
+    },
+    "step": {
+      "type": "object",
+      "required": ["id", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "kind": {"type": "string", "enum": ["agent", "human", "approval", "auto", "notify"]},
+        "title": {"type": "string"},
+        "needs": {"type": "array", "items": {"type": "string"}},
+        "when": {"$ref": "#/$defs/condition"},
+        "instructions": {"type": "string", "description": "agent steps: what the executing agent must do"},
+        "skill": {"type": "string", "description": "agent steps: Cowork or Claude Code skill to use"},
+        "outputs": {"type": "array", "items": {"type": "string"}, "description": "Output keys the step must produce"},
+        "body": {"type": "string", "description": "human/approval/notify: card body, templated"},
+        "channel": {"type": "string"},
+        "user": {"type": "string", "description": "Email or UPN of the person to notify, templated"},
+        "link": {"type": "string", "description": "Deep link shown on the card, templated"},
+        "options": {"type": "array", "items": {"type": "string"}, "description": "approval: decision buttons, default approve/reject"},
+        "timeout": {"type": "string", "pattern": "^[0-9]+(m|h|d)$"},
+        "remind_after": {"type": "string", "pattern": "^[0-9]+(m|h|d)$"},
+        "on_timeout": {"type": "string", "enum": ["fail", "skip", "reject", "escalate"]},
+        "escalate_to": {"type": "string"},
+        "action": {
+          "type": "object",
+          "description": "auto steps: a built-in action",
+          "required": ["type"],
+          "properties": {
+            "type": {"type": "string", "enum": ["http", "set"]},
+            "method": {"type": "string"},
+            "url": {"type": "string"},
+            "headers": {"type": "object"},
+            "json": {},
+            "values": {"type": "object"}
+          }
+        }
+      }
+    }
+  }
+}

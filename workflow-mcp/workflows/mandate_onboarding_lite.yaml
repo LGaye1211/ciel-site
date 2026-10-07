@@ -1,0 +1,111 @@
+# A cut-down mandate onboarding: extract terms, verify, fan out setup, gate go-live.
+name: mandate_onboarding_lite
+version: 1
+description: From signed IMA to go-live readiness, with humans only at review and gate points.
+owner: client-onboarding
+inputs:
+  type: object
+  required: [mandate_name, opportunity_id, ima_document_url, onboarding_lead, compliance_reviewer]
+  properties:
+    mandate_name:        {type: string}
+    opportunity_id:      {type: string}
+    ima_document_url:    {type: string}
+    onboarding_lead:     {type: string, description: email}
+    compliance_reviewer: {type: string, description: email}
+    custodian:           {type: string}
+notify:
+  channel: client-onboarding
+  audit_channel: agent-audit
+
+steps:
+  - id: extract_terms
+    kind: agent
+    title: Extract mandate terms from the IMA
+    skill: ima-extraction
+    instructions: |
+      Read the investment management agreement at {{ inputs.ima_document_url }}.
+      Extract into structured fields with a clause reference each: investment guidelines
+      (as a list of restrictions), benchmark, fee schedule, reporting obligations, custodian,
+      base currency, inception date. Flag any clause that deviates from the standard template.
+      Return `terms` (object), `deviations` (list), `low_confidence_fields` (list of field names).
+    outputs: [terms, deviations, low_confidence_fields]
+
+  - id: review_terms
+    kind: human
+    needs: [extract_terms]
+    title: Verify extracted terms for {{ inputs.mandate_name }}
+    user: "{{ inputs.onboarding_lead }}"
+    body: |
+      Please check the fields the agent was unsure about: {{ steps.extract_terms.outputs.low_confidence_fields }}
+      Deviations from template: {{ steps.extract_terms.outputs.deviations }}
+    link: "{{ inputs.ima_document_url }}"
+    timeout: 2d
+    remind_after: 1d
+    on_timeout: escalate
+    escalate_to: onboarding-leads@example.com
+
+  - id: code_guidelines
+    kind: agent
+    needs: [review_terms]
+    title: Draft compliance rules
+    skill: guideline-coding
+    instructions: |
+      Translate these guidelines into compliance-engine rules plus test portfolios that must pass and fail:
+      {{ steps.extract_terms.outputs.terms.guidelines }}
+      Return `rules` (list), `tests` (list), `open_questions` (list).
+    outputs: [rules, tests, open_questions]
+
+  - id: approve_guidelines
+    kind: approval
+    needs: [code_guidelines]
+    title: Approve compliance rules for {{ inputs.mandate_name }}
+    user: "{{ inputs.compliance_reviewer }}"
+    body: |
+      {{ steps.code_guidelines.outputs.rules }}
+      Open questions: {{ steps.code_guidelines.outputs.open_questions }}
+    timeout: 3d
+    remind_after: 1d
+    on_timeout: escalate
+    escalate_to: compliance-leads@example.com
+
+  - id: setup_systems
+    kind: agent
+    needs: [review_terms]
+    title: Set up portfolio, benchmark, fees and reporting
+    skill: mandate-setup
+    instructions: |
+      Using terms {{ steps.extract_terms.outputs.terms }}, create the portfolio code, benchmark link,
+      fee schedule and reporting pack configuration. Verify each by reading it back from the system.
+      Return `setup` (map of system -> status) and `blockers` (list).
+    outputs: [setup, blockers]
+
+  - id: readiness
+
+    kind: agent
+    needs: [approve_guidelines, setup_systems]
+    when: {step: approve_guidelines, output: decision, eq: approved}
+    title: Run go-live readiness checks
+    skill: mandate-readiness
+    instructions: |
+      Check: compliance rules loaded and tests passing, custodian instructions verified,
+      portfolio exists, benchmark and fees attached, reporting pack configured.
+      Return `ready` (true/false) and `report` (markdown).
+    outputs: [ready, report]
+
+  - id: go_live
+    kind: approval
+    needs: [readiness]
+    when: {step: readiness, output: ready, eq: true}
+    title: Go-live decision for {{ inputs.mandate_name }}
+    options: [go, no_go]
+    body: "{{ steps.readiness.outputs.report }}"
+    timeout: 1d
+    on_timeout: escalate
+    escalate_to: "{{ inputs.onboarding_lead }}"
+
+  - id: announce
+    kind: notify
+    needs: [go_live]
+    when: {step: go_live, output: decision, eq: go}
+    title: "{{ inputs.mandate_name }} is live"
+    body: Go-live approved by {{ steps.go_live.outputs.decided_by }}.

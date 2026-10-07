@@ -1,0 +1,68 @@
+# The smallest useful workflow: an agent proposes a change to a record,
+# a human approves it from Teams, the agent applies it, the channel is told.
+name: data_fix_approval
+version: 1
+description: Agent-proposed change to a Salesforce record, applied only after human approval in Teams.
+owner: sales-ops
+inputs:
+  type: object
+  required: [record_id, record_url, owner_email, issue]
+  properties:
+    record_id:   {type: string}
+    record_url:  {type: string}
+    owner_email: {type: string}
+    issue:       {type: string, description: What looks wrong with the record}
+notify:
+  channel: sales-ops
+  audit_channel: agent-audit
+
+steps:
+  - id: propose
+    kind: agent
+    title: Propose a fix for {{ inputs.record_id }}
+    skill: salesforce-data-quality
+    instructions: |
+      Open Salesforce record {{ inputs.record_id }} ({{ inputs.record_url }}).
+      Reported issue: {{ inputs.issue }}
+      Determine the correct values. Do NOT write to Salesforce in this step.
+      Return `summary` (one paragraph a sales manager can read), `changes`
+      (a map of field -> new value) and `confidence` (0 to 1).
+    outputs: [summary, changes, confidence]
+
+  - id: approve
+    kind: approval
+    needs: [propose]
+    when: {step: propose, output: confidence, lt: 0.95}
+    title: Approve change to {{ inputs.record_id }}
+    user: "{{ inputs.owner_email }}"
+    body: |
+      {{ steps.propose.outputs.summary }}
+
+      Proposed changes: {{ steps.propose.outputs.changes }}
+      Agent confidence: {{ steps.propose.outputs.confidence }}
+    link: "{{ inputs.record_url }}"
+    timeout: 24h
+    remind_after: 4h
+    on_timeout: reject
+
+  - id: apply
+    kind: agent
+    needs: [approve]
+    when:
+      any:
+        - {step: approve, output: decision, eq: approved}
+        - {step: approve, output: decision, exists: false}   # approve step skipped: high confidence
+    title: Apply the change to {{ inputs.record_id }}
+    skill: salesforce-data-quality
+    instructions: |
+      Apply exactly these changes to record {{ inputs.record_id }}:
+      {{ steps.propose.outputs.changes }}
+      Return `applied` (true/false) and `details`.
+    outputs: [applied, details]
+
+  - id: done
+    kind: notify
+    needs: [apply]
+    title: Record {{ inputs.record_id }} updated
+    body: "{{ steps.propose.outputs.summary }} Decision: {{ steps.approve.outputs.decision }}. Applied: {{ steps.apply.outputs.applied }}."
+    link: "{{ inputs.record_url }}"

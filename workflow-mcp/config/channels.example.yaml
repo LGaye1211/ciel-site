@@ -1,0 +1,12 @@
+# Map logical channel names used in workflow YAML to real Teams destinations.
+# Copy to channels.yaml and point WFMCP_CHANNELS at it.
+channels:
+  sales-ops:         https://prod-00.westeurope.logic.azure.com:443/workflows/<id>/triggers/manual/paths/invoke?...
+  client-onboarding: https://prod-00.westeurope.logic.azure.com:443/workflows/<id>/triggers/manual/paths/invoke?...
+  agent-audit:       https://prod-00.westeurope.logic.azure.com:443/workflows/<id>/triggers/manual/paths/invoke?...
+default_channel: sales-ops
+
+# Optional: per-user activity-feed pings through Microsoft Graph (app-only TeamsActivity.Send).
+# graph:
+#   teams_app_id: 00000000-0000-0000-0000-000000000000
+#   token_env: GRAPH_TOKEN
