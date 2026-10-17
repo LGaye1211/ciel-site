@@ -1,6 +1,6 @@
 # EcomBos Pro: settings, credits, fidelity test
 
-**Verdict (from the plan):** use EcomBos as a one-month paid test on **Pro, monthly, by card**. It is the video's tool, it bundles the models you need, and its terms say the output is yours to use commercially. Evidence is thin: the only review found is an affiliate publisher's, no Reddit or Trustpilot results turned up, and the terms name no company or country. The product lives at ecombos.ai (ecombos.com is a parked domain for sale).
+**Verdict:** EcomBos stays the pick for paid video, but on the cheapest path it is an **upgrade, not a day-one cost**. Start with `free-video-stack.md`. Subscribe to **Pro, monthly, by card** only when a trigger fires: the free tools fail the fidelity test on 2 of 3 products, you cannot make a clip a day, or a product reaches 10 add-to-carts. Then treat the first month as a test. It is the video's tool, it bundles the models you need, and its terms say the output is yours to use commercially. Evidence is thin: the only review found is an affiliate publisher's, no Reddit or Trustpilot results turned up, and the terms name no company or country. The product lives at ecombos.ai (ecombos.com is a parked domain for sale).
 
 ## Account rules (from its terms)
 
@@ -61,7 +61,7 @@ Image-to-video from the attached product photos. Keep the product exactly as in 
 5. Add the narrator voice-over from `scripts.md`, with on-screen text from your editor.
 6. Run the fidelity checks below before you post anything.
 
-## Fidelity test (Day 1 of the test month)
+## Fidelity test (run it on whichever tool you use, before the first post)
 
 Goal: find out whether EcomBos can render your actual products without changing them. You never see the product, so a video that misrepresents it becomes refunds.
 
@@ -86,7 +86,12 @@ overall:    PASS / FAIL    date:
 
 Review sites list known AI-video failures: logos and labels morphing, shapes drifting, hands deforming the product, and the same product looking different from clip to clip. Expect some.
 
-## If the test fails: switch steps
+## If the free tools fail the test
+
+1. Make photo-and-text videos from the supplier's photos (`free-video-stack.md`, Route A). They cannot misrepresent the product.
+2. Or subscribe to EcomBos Pro and run the same test again.
+
+## If the test fails on EcomBos: switch steps
 
 1. Download every asset from EcomBos.
 2. Do not renew. Cancel in account settings so you keep access to the end of the billing period.

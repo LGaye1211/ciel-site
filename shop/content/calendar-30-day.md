@@ -4,7 +4,7 @@
 
 Products A, B and C are your three shortlisted products. Each gets six new clips following the same pillar order: Problem, Demo, Objection, Use case, Comparison, Problem with a new angle.
 
-Credits: 18 new clips at 10 credits (Seedance 2) is **180**. See `ai-video-tool.md` for the full 300-credit budget on EcomBos Pro, including retakes.
+Credits: 18 new clips at 10 credits (Seedance 2) is **180**. That column only costs money if you upgrade to EcomBos Pro; see `ai-video-tool.md` for the full 300-credit budget, including retakes. On the free route (`free-video-stack.md`) the same rows use free AI credits or photo-and-text edits.
 
 | Day | Weekday | Product | Pillar | Format | Credits |
 |---|---|---|---|---|---|

@@ -1,10 +1,12 @@
 # shop/ - Doba + AutoDS dropshipping kit
 
-The model: **AutoDS finds products. Doba ships them from U.S. warehouses. Shopify sells them. EcomBos makes the videos.** U.S. customers only. You never touch the product.
+The model: **AutoDS finds products. Doba ships them from U.S. warehouses. Shopify sells them. Free AI-video tools and CapCut make the videos, with EcomBos as the paid upgrade.** U.S. customers only. You never touch the product.
 
 > **This repo is public.** Everything under `shop/` is readable by anyone, and nothing here is merged to main. Files use placeholders only: `[BUSINESS NAME]`, `[ADDRESS]`, `[EMAIL]`. Real details go into Shopify and your own notes, never into these files.
 
 ## Run order (Day 0 = Sat 17 Oct 2026)
+
+**Start with `START-HERE.md`.** It is the cheapest sequence: about $35-65 in fees by Day 40, plus a $50-100 order float.
 
 | Step | File | Cost | Done when |
 |---|---|---|---|
@@ -13,11 +15,11 @@ The model: **AutoDS finds products. Doba ships them from U.S. warehouses. Shopif
 | 3 | `research/autods-playbook.md` | $0.99 trial | 15 candidates in `economics/candidates.csv` |
 | 4 | `research/doba-bridge.md`, `economics/` | $0 | 3-5 products PASS the gate |
 | 5 | `store/` | Shopify about $1, domain about $1 | store live, test checkout passed |
-| 6 | `content/` | EcomBos Pro $37-49 | fidelity test passed, first video posted |
+| 6 | `content/` | $0 with the free video route. EcomBos Pro $37-49 only after a trigger. | fidelity test passed, first video posted |
 | 7 | `ops/` | $0 | daily and weekly routines running |
 | 8 | `entity/` | $130-400 | only if you fund the LLC lane |
 
-Kill rules and the full budget live in the approved plan. Short version: total outlay capped at $250 until 10 real sales, pause any product past 8% refunds or complaints, stop and review at Day 40 (about 26 Nov) if there are no add-to-carts.
+Kill rules and the budget are in `START-HERE.md`. Short version: total outlay capped at $250 until 10 real sales, pause any product past 8% refunds or complaints, stop and review at Day 40 (about 26 Nov) if there are no add-to-carts.
 
 ## Commands (Python 3.9+, standard library only)
 
