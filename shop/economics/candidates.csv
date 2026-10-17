@@ -1,0 +1,9 @@
+name,sale_price,doba_cost,doba_shipping,us_stock,ship_days,supplier_score,category_flag,notes
+# EXAMPLE rows below use made-up numbers to show the format. Delete them. Fill one row per candidate.
+# sale_price = what the customer pays. doba_cost and doba_shipping = what Doba bills you per order.
+# us_stock = yes or no. ship_days = supplier handling plus delivery, whole days. supplier_score = Doba's score (FILL: scale).
+# category_flag = leave blank, or name the restriction (supplement, cosmetic, kids, battery, mains, branded, ...).
+EXAMPLE-calming-pet-bed,39.99,14.50,5.50,yes,5,4.6,,illustrative numbers only
+EXAMPLE-cable-organizer,19.99,6.00,4.50,yes,4,4.5,,illustrative numbers only - thin margin
+EXAMPLE-herbal-supplement,29.99,8.00,4.00,yes,3,4.8,supplement,illustrative numbers only - regulated
+EXAMPLE-unchecked-gadget,34.99,11.00,4.00,,,,,illustrative numbers only - checks blank
