@@ -4,6 +4,18 @@ A Shopify Online Store 2.0 theme for a small dropshipping store that sells to U.
 
 This branch contains only the theme, because Shopify's GitHub integration reads the theme folders at the branch root. The kit that goes with it (playbooks, policies, scripts) is on the `claude/great-cerf-xca3vw` branch under `shop/`.
 
+## Privacy: this branch is public
+
+When this branch is connected to Shopify, Shopify saves every change made in the theme editor back to the branch. Theme settings, including Store facts, are stored in `config/settings_data.json`. On a public repository, anything typed there becomes public.
+
+- Use a role email such as support@your-domain, not a personal address.
+- Leave the postal address empty, or use a business address you are happy to publish.
+- A private repository removes this risk. Move the theme there before entering anything you want to keep private.
+
+## Updating a live theme
+
+A commit to a connected branch updates that theme at once. If the theme is live, so is the change. After you publish, put changes on a second branch connected as an unpublished theme, preview them, then merge into this branch.
+
 ## What is different from Dawn
 
 - **Colors:** a calm palette (paper, ink, terracotta, soft teal) in the five color schemes. Every text and button pair clears the WCAG AA 4.5:1 contrast ratio.
