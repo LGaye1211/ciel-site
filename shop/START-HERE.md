@@ -26,7 +26,7 @@ Month 4 Shopify bills $39 ($29 on annual billing). A possible cheaper plan is St
 1. **Day 0, about $1: fatal-risk gates.** Open the Shopify trial. Check that Doba accepts a Swiss account and card, and that Shopify Payments takes U.S. dollars. Follow `model/day0-gates.md`. If either is a NO-GO, stop. Nothing else has been spent.
 2. **Day 1-3, $0.99: research.** Free research first: Reddit and Discord complaints, Google Trends, ad libraries. Then the 3-day AutoDS trial for the marketplace and trending lists. Export 15 candidates and cancel. Follow `research/autods-playbook.md`.
 3. **Day 3-5, $0: bridge and gate.** Match candidates in Doba's catalog during its trial, using Doba Pilot's free credits if offered. Run `economics/landed_cost.py`. Keep 3 to 5 passing products. Follow `research/doba-bridge.md`.
-4. **Day 4-7, $0: build.** Free base from buildyourstore.ai. Claude rewrites the copy from the supplier listings. Strip fake social proof. Paste the policy pages. Test checkout in test mode. Cancel or downgrade Doba by day 6. Follow `store/shopify-setup.md`.
+4. **Day 4-7, $0: build.** Connect Claude's theme from GitHub, fill Store facts, create five pages, paste the policies, preview on your phone. Claude rewrites product copy from the supplier listings. Test checkout in test mode. Cancel or downgrade Doba by day 6. Follow `store/theme-guide.md`, `store/theme-checklist.md` and `store/shopify-setup.md`. `store/ai-store-builder.md` is the fallback.
 5. **Day 7, $0: free video test.** 3 products, 3 clips each, from supplier photos. Five-point fidelity check from `content/ai-video-tool.md`. If two products fail, use photo-and-text videos. Follow `content/free-video-stack.md`.
 6. **Day 8-10, $29.99: go live.** Subscribe to Doba Limited, remove the password page, post clip 1. Follow `content/calendar-30-day.md`: 26 posts in 30 days.
 7. **Day 10-40, no new spend: run it.** Post daily. Use `ops/daily-checklist.md` and `ops/weekly-review.md`. Weekly review with Claude. No ads.
@@ -75,3 +75,5 @@ What raises the odds: product choice (the painkiller test plus the margin gate),
 ## Unverified
 
 Doba on a Swiss account. Shopify's $1 offer in Switzerland. Free AI-video tiers' commercial rights. CapCut's music and template rights. The video's own step order. All were read from blogs and vendor pages, not official terms. Each has its own check in the kit.
+
+Claude's theme in a live Shopify store. It passed Theme Check, a schema validator and render tests, nothing more. Your preview and test checkout are the real test.

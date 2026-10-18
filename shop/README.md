@@ -3,6 +3,10 @@
 The model: **AutoDS finds products. Doba ships them from U.S. warehouses. Shopify sells them. Free AI-video tools and CapCut make the videos, with EcomBos as the paid upgrade.** U.S. customers only. You never touch the product.
 
 > **This repo is public.** Everything under `shop/` is readable by anyone, and nothing here is merged to main. Files use placeholders only: `[BUSINESS NAME]`, `[ADDRESS]`, `[EMAIL]`. Real details go into Shopify and your own notes, never into these files.
+>
+> **The `shopify-theme` branch is public too.** Once it is connected, Shopify saves theme-editor changes, including the Store facts you type, back to it. Read `store/theme-guide.md` section 0 before you connect.
+
+**The website** is a Shopify theme Claude wrote, on the `shopify-theme` branch. That branch holds only theme files at its root, because Shopify's GitHub link reads them there. `store/theme-guide.md` connects it, fills it and publishes it. Claude keeps editing it through that branch.
 
 ## Run order (Day 0 = Sat 17 Oct 2026)
 
@@ -14,7 +18,7 @@ The model: **AutoDS finds products. Doba ships them from U.S. warehouses. Shopif
 | 2 | `model/video-stack.md` | $0 | transcript pasted to Claude (optional), differences fixed |
 | 3 | `research/autods-playbook.md` | $0.99 trial | 15 candidates in `economics/candidates.csv` |
 | 4 | `research/doba-bridge.md`, `economics/` | $0 | 3-5 products PASS the gate |
-| 5 | `store/` | Shopify about $1, domain about $1 | store live, test checkout passed |
+| 5 | `store/` | Shopify about $1, domain about $1 | theme connected, `store/theme-checklist.md` passed, test checkout passed, store live |
 | 6 | `content/` | $0 with the free video route. EcomBos Pro $37-49 only after a trigger. | fidelity test passed, first video posted |
 | 7 | `ops/` | $0 | daily and weekly routines running |
 | 8 | `entity/` | $130-400 | only if you fund the LLC lane |
@@ -31,9 +35,12 @@ python landed_cost.py candidates.csv --json
 python landed_cost.py candidates.csv --refund-pct 20 --fx-pct 0
 
 cd ../store
-python -m unittest                        # 12 tests
+python -m unittest                        # 52 tests: products checker 12, theme zip builder 40
 python check_products_csv.py products.csv
+python build_theme_zip.py ciel-site-shopify-theme.zip -o shopify-theme.zip   # manual-upload fallback
 ```
+
+The theme's own checks (Theme Check, schema validator, render tests) are in `store/theme-tools/` and need Node. See its README.
 
 ## Conventions
 
@@ -44,7 +51,7 @@ python check_products_csv.py products.csv
 
 ## What Claude cannot do for you
 
-Log into Shopify, AutoDS, Doba, EcomBos or a bank. Pay anything. Post videos. Form the LLC or file anything. Open the video in your browser. Give legal or tax advice. Everything else in this folder is prepared so you can do those steps quickly.
+Log into Shopify, AutoDS, Doba, EcomBos or a bank. Pay anything. Post videos. Form the LLC or file anything. Open the video in your browser. Give legal or tax advice. Everything else in this folder is prepared so you can do those steps quickly. Claude does write and update the website code (the theme). Connecting it, typing the Store facts and pressing Publish are yours.
 
 ## Map
 
@@ -52,7 +59,7 @@ Log into Shopify, AutoDS, Doba, EcomBos or a bank. Pay anything. Post videos. Fo
 model/       what the video shows, Day 0 gates, gate results
 research/    AutoDS playbook, Doba bridge
 economics/   margin gate (landed_cost.py), tests, candidates.csv
-store/       Shopify setup, AI store builder notes, pages, products.csv and its checker
+store/       theme guide and phone checklist, Shopify setup, theme zip builder, theme-tools, AI store builder notes, pages, products.csv and its checker
 brand/       names, voice, palette, logo prompts
 content/     30-day calendar, hooks, scripts, EcomBos guide, claims checklist
 email/       welcome, abandoned cart, shipping update, review request

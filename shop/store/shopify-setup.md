@@ -61,9 +61,9 @@ Copy is in `email/`.
 
 ## 8. Policies and pages
 
-- Settings > Policies: paste `pages/privacy-policy.md`, `pages/terms-of-service.md`, `pages/returns-refunds.md`, `pages/shipping-policy.md`. Replace every `[BRACKET]`. **Have a professional review them before launch.**
-- Online Store > Pages: create About, Contact and FAQ from `pages/`.
-- Online Store > Navigation: footer menu with Shipping, Returns, Privacy, Terms, Contact.
+- Settings > Policies: paste `pages/privacy-policy.md`, `pages/terms-of-service.md`, `pages/returns-refunds.md`, `pages/shipping-policy.md`. Replace every `[BRACKET]`. **Have a professional review them before launch.** With Claude's theme, copy the Refund and Shipping policy text from your live Returns and Shipping pages instead (`theme-guide.md` section 5), so policy and page agree.
+- Online Store > Pages: with Claude's theme, create the five pages in `theme-guide.md` section 3 and leave their bodies empty, because the templates supply the text. Without the theme, create About, Contact and FAQ from `pages/`.
+- Online Store > Navigation: footer menu with Shipping, Returns and Contact, plus About and FAQ with Claude's theme. Add Privacy and Terms too, unless the theme lists the policies itself (Claude's theme does, in the footer's bottom row).
 
 ## 9. Apps (minimum set)
 
@@ -73,7 +73,7 @@ Copy is in `email/`.
 
 ## 10. Theme and brand
 
-- Use the theme from `ai-store-builder.md`, or a free Shopify theme.
+- Use Claude's theme: connect it from GitHub, fill Store facts, preview with `theme-checklist.md` (`theme-guide.md`). The alternatives are `ai-store-builder.md` or a free Shopify theme.
 - Logo and colours from `../brand/`.
 - Design for phones first. Most social traffic arrives on one. Check every page on your own phone.
 - Home page order: hero with the one problem, the product, three-step how it works, honest delivery and returns, FAQ.
@@ -87,6 +87,7 @@ Settings > Domains. Connect the `.store` domain you bought, or the free first-ye
 - [ ] Gate A and Gate B are GO
 - [ ] Only the U.S. market is open
 - [ ] Product copy matches the supplier listing and the claims log is done
+- [ ] With Claude's theme: Store facts filled, promises in `theme-guide.md` section 7 checked, `theme-checklist.md` done
 - [ ] No fake reviews, counters, "as seen on" logos or "X sold" claims anywhere
 - [ ] Policies reviewed by a professional
 - [ ] Test checkout done and test mode turned off (step 13)

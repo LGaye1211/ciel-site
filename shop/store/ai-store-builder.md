@@ -1,5 +1,7 @@
 # buildyourstore.ai: run it, then fix it
 
+> **Fallback.** The default route is Claude's theme (`theme-guide.md`). Use this builder only if that theme fails in your store and cannot be fixed quickly.
+
 The video's description names an AI store builder at buildyourstore.ai that makes "a Shopify store in under 2 minutes". It saves setup time. It does not produce a finished store.
 
 What reviews say (affiliate and competing review sites, so treat as indicative):
