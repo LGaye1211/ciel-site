@@ -1,0 +1,58 @@
+{%- liquid
+  assign list = ''
+  if section.settings.show_us_warehouse
+    assign list = list | append: 'Ships from a U.S. warehouse|'
+  endif
+  if settings.free_us_shipping
+    assign list = list | append: 'Free U.S. shipping|'
+  endif
+  if settings.return_days > 0
+    assign return_item = settings.return_days | append: '-day returns|'
+    assign list = list | append: return_item
+  endif
+  assign items = list | split: '|'
+-%}
+
+{%- if items.size > 0 -%}
+  <div
+    class="facts-bar color-{{ section.settings.color_scheme }} gradient"
+    role="region"
+    aria-label="Store facts"
+  >
+    <ul class="facts-bar__list page-width">
+      {%- for item in items -%}
+        {%- if item != blank -%}
+          <li class="facts-bar__item">{{ item | escape }}</li>
+        {%- endif -%}
+      {%- endfor -%}
+    </ul>
+  </div>
+{%- elsif request.design_mode -%}
+  <div class="facts-bar facts-bar--hint color-{{ section.settings.color_scheme }} gradient">
+    <p class="page-width">Open Theme settings, then Store facts, to fill in what this bar shows.</p>
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Store facts bar",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Shows only true facts: what you enter in Theme settings, Store facts. Empty fields are hidden."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-3"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_us_warehouse",
+      "label": "Show \"Ships from a U.S. warehouse\"",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

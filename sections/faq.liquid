@@ -1,0 +1,221 @@
+{{ 'component-accordion.css' | asset_url | stylesheet_tag }}
+
+{%- style -%}
+  .section-{{ section.id }}-padding {
+    padding-top: {{ section.settings.padding_top | times: 0.75 | round: 0 }}px;
+    padding-bottom: {{ section.settings.padding_bottom | times: 0.75 | round: 0 }}px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .section-{{ section.id }}-padding {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+    }
+  }
+{%- endstyle -%}
+
+{%- liquid
+  assign hd = settings.handling_days
+  assign rd = settings.return_days
+  assign email = settings.support_email
+  assign returns_page = pages['returns']
+  assign shown = 0
+-%}
+{%- capture handling_text -%}{%- render 'store-days', count: hd -%}{%- endcapture -%}
+{%- capture delivery_text -%}{%- render 'store-delivery-window' -%}{%- endcapture -%}
+{%- capture reply_text -%}{%- render 'store-hours', count: settings.reply_hours -%}{%- endcapture -%}
+{%- capture email_link -%}
+  {%- if email != blank -%}<a href="mailto:{{ email | escape }}">{{ email | escape }}</a>{%- endif -%}
+{%- endcapture -%}
+{%- assign handling_text = handling_text | strip -%}
+{%- assign delivery_text = delivery_text | strip -%}
+{%- assign reply_text = reply_text | strip -%}
+{%- assign email_link = email_link | strip -%}
+
+<div class="color-{{ section.settings.color_scheme }} gradient">
+  <div class="page-width section-{{ section.id }}-padding">
+    <div class="faq-list">
+      {%- if template.name == 'page' -%}
+        <h1 class="main-page-title page-title h0">{{ page.title | escape }}</h1>
+      {%- elsif section.settings.heading != blank -%}
+        <h2 class="facts-heading inline-richtext {{ section.settings.heading_size }}">{{ section.settings.heading | escape }}</h2>
+      {%- endif -%}
+
+      {%- if section.settings.show_builtin -%}
+        {%- if section.settings.show_us_warehouse -%}
+          {%- capture answer -%}<p>From a U.S. warehouse. We do not keep stock ourselves.</p>{%- endcapture -%}
+          {%- render 'faq-item', question: 'Where does my order ship from?', answer: answer -%}
+          {%- assign shown = shown | plus: 1 -%}
+        {%- endif -%}
+
+        {%- if handling_text != blank or delivery_text != blank -%}
+          {%- capture answer -%}
+            <p>
+              {%- if handling_text != blank -%}Orders ship within {{ handling_text }}.{%- endif -%}
+              {%- if delivery_text != blank %} After shipping, delivery is typically {{ delivery_text }}.{% endif %}
+              You will get a tracking link by email.
+            </p>
+          {%- endcapture -%}
+          {%- render 'faq-item', question: 'How long will it take?', answer: answer -%}
+          {%- assign shown = shown | plus: 1 -%}
+        {%- endif -%}
+
+        {%- capture answer -%}<p>Not at the moment. We ship to addresses in the United States only.</p>{%- endcapture -%}
+        {%- render 'faq-item', question: 'Do you ship outside the United States?', answer: answer -%}
+        {%- assign shown = shown | plus: 1 -%}
+
+        {%- if settings.free_us_shipping -%}
+          {%- capture answer -%}<p>Shipping is free on every order to a U.S. address.</p>{%- endcapture -%}
+          {%- render 'faq-item', question: 'How much is shipping?', answer: answer -%}
+          {%- assign shown = shown | plus: 1 -%}
+        {%- endif -%}
+
+        {%- capture answer -%}<p>Use the link in your shipping confirmation email. It can take a short while after shipping before the first scan shows.</p>{%- endcapture -%}
+        {%- render 'faq-item', question: 'How do I track my order?', answer: answer -%}
+        {%- assign shown = shown | plus: 1 -%}
+
+        {%- capture answer -%}
+          <p>Yes, until it ships.
+            {%- if email_link != blank %} Write to {{ email_link }} right away.{% else %} Contact us right away.{% endif -%}
+          </p>
+        {%- endcapture -%}
+        {%- render 'faq-item', question: 'Can I change or cancel my order?', answer: answer -%}
+        {%- assign shown = shown | plus: 1 -%}
+
+        {%- if rd > 0 -%}
+          {%- capture answer -%}
+            <p>You can return an item within {{ rd }} days of delivery.
+              {%- if returns_page.url != blank %} See the <a href="{{ returns_page.url }}">Returns page</a> for the steps.{% endif -%}
+            </p>
+          {%- endcapture -%}
+          {%- render 'faq-item', question: 'What is your return policy?', answer: answer -%}
+          {%- assign shown = shown | plus: 1 -%}
+        {%- endif -%}
+
+        {%- if email_link != blank -%}
+          {%- capture answer -%}<p>Send a photo and your order number to {{ email_link }}. We will replace it or refund it.</p>{%- endcapture -%}
+          {%- render 'faq-item', question: 'It arrived damaged or not as described.', answer: answer -%}
+          {%- assign shown = shown | plus: 1 -%}
+
+          {%- capture answer -%}
+            <p>Write to {{ email_link }}.
+              {%- if reply_text != blank %} We reply within {{ reply_text }}.{% endif -%}
+            </p>
+          {%- endcapture -%}
+          {%- render 'faq-item', question: 'How do I contact you?', answer: answer -%}
+          {%- assign shown = shown | plus: 1 -%}
+        {%- endif -%}
+      {%- endif -%}
+
+      {%- for block in section.blocks -%}
+        {%- render 'faq-item',
+          question: block.settings.question,
+          answer: block.settings.answer,
+          attributes: block.shopify_attributes
+        -%}
+        {%- assign shown = shown | plus: 1 -%}
+      {%- endfor -%}
+
+      {%- if shown == 0 and request.design_mode -%}
+        <p class="design-hint">Nothing to show yet. Turn on the built-in questions or add your own.</p>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "FAQ",
+  "tag": "section",
+  "class": "section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Built-in questions read Theme settings, Store facts. A question that needs a missing fact is hidden."
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading (not used on a page template, where the page title is used)",
+      "default": "Frequently asked questions"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "options": [
+        { "value": "h1", "label": "Large" },
+        { "value": "h2", "label": "Medium" },
+        { "value": "h3", "label": "Small" }
+      ],
+      "default": "h2",
+      "label": "Heading size"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_builtin",
+      "label": "Show built-in questions",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_us_warehouse",
+      "label": "Say orders ship from a U.S. warehouse",
+      "default": true
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 36
+    }
+  ],
+  "blocks": [
+    {
+      "type": "question",
+      "name": "Question",
+      "settings": [
+        {
+          "type": "text",
+          "id": "question",
+          "label": "Question",
+          "default": "Question"
+        },
+        {
+          "type": "richtext",
+          "id": "answer",
+          "label": "Answer",
+          "default": "<p>Answer using only facts you can stand behind.</p>"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "FAQ"
+    }
+  ]
+}
+{% endschema %}

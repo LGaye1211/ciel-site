@@ -1,0 +1,17 @@
+{%- comment -%}
+  One collapsible question. Params:
+    question (string, escaped here)
+    answer (HTML string, printed as given)
+    attributes (optional string, a block's shopify_attributes)
+{%- endcomment -%}
+<div class="accordion faq-item" {{ attributes }}>
+  <details>
+    <summary>
+      <h3 class="accordion__title inline-richtext h4">{{ question | escape }}</h3>
+      {{- 'icon-caret.svg' | inline_asset_content -}}
+    </summary>
+    <div class="accordion__content rte">
+      {{ answer }}
+    </div>
+  </details>
+</div>

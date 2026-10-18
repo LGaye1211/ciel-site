@@ -1,0 +1,198 @@
+{%- style -%}
+  .section-{{ section.id }}-padding {
+    padding-top: {{ section.settings.padding_top | times: 0.75 | round: 0 }}px;
+    padding-bottom: {{ section.settings.padding_bottom | times: 0.75 | round: 0 }}px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .section-{{ section.id }}-padding {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+    }
+  }
+{%- endstyle -%}
+
+{%- liquid
+  assign business = settings.legal_name | default: shop.name
+  assign email = settings.support_email
+  assign rd = settings.return_days
+  assign address = settings.legal_address
+-%}
+{%- capture handling_text -%}{%- render 'store-days', count: settings.handling_days -%}{%- endcapture -%}
+{%- capture delivery_text -%}{%- render 'store-delivery-window' -%}{%- endcapture -%}
+{%- capture refund_text -%}{%- render 'store-days', count: settings.refund_days -%}{%- endcapture -%}
+{%- capture email_link -%}
+  {%- if email != blank -%}<a href="mailto:{{ email | escape }}">{{ email | escape }}</a>{%- endif -%}
+{%- endcapture -%}
+{%- assign handling_text = handling_text | strip -%}
+{%- assign delivery_text = delivery_text | strip -%}
+{%- assign refund_text = refund_text | strip -%}
+{%- assign email_link = email_link | strip -%}
+
+<div class="color-{{ section.settings.color_scheme }} gradient">
+  <div class="page-width section-{{ section.id }}-padding">
+    <div class="policy-page rte">
+      {%- if request.design_mode -%}
+        <p class="design-hint">Template text. Have a professional review it before you publish. It reads Theme settings, Store facts, and hides any sentence whose fact is empty.</p>
+      {%- endif -%}
+
+      <h1 class="main-page-title page-title h0">{{ page.title | escape }}</h1>
+
+      {%- case section.settings.kind -%}
+        {%- when 'shipping' -%}
+          <h2>Where we ship</h2>
+          <p>We ship to addresses in the United States only. We do not ship internationally at this time.</p>
+
+          <h2>Where orders ship from</h2>
+          <p>Orders ship from U.S. warehouses operated by our suppliers. {{ business | escape }} does not hold stock.</p>
+
+          {%- if handling_text != blank -%}
+            <h2>Processing time</h2>
+            <p>Orders are handed to the carrier within {{ handling_text }} of payment, excluding weekends and U.S. holidays.</p>
+          {%- endif -%}
+
+          {%- if delivery_text != blank -%}
+            <h2>Delivery time</h2>
+            <p>After shipping, delivery is typically {{ delivery_text }}. These are estimates, not guarantees. Carrier delays, weather and holidays can add time.</p>
+          {%- endif -%}
+
+          {%- if settings.free_us_shipping -%}
+            <h2>Shipping cost</h2>
+            <p>Shipping is free on all orders to a U.S. address.</p>
+          {%- endif -%}
+
+          <h2>Tracking</h2>
+          <p>You will receive a shipping confirmation email with a tracking link. It can take a short while after shipping before the first scan shows.</p>
+
+          <h2>Delays</h2>
+          <p>If we learn that your order will not arrive in the time we stated, we will email you with the new date and offer you the choice to wait or cancel for a full refund.</p>
+
+          <h2>Address errors</h2>
+          <p>Check your address at checkout. If a package comes back because of an incorrect address, we will contact you. We may need to charge for re-shipping.</p>
+
+          <h2>Lost or damaged packages</h2>
+          <p>
+            If tracking shows delivered but you did not receive the package, or it arrives damaged,
+            {%- if email_link != blank %} write to {{ email_link }} as soon as you can.{% else %} contact us as soon as you can.{% endif %}
+            We will work with the carrier and supplier and replace or refund as our Returns policy describes.
+          </p>
+
+          <h2>Split shipments</h2>
+          <p>Items in one order can ship from different warehouses and arrive on different days. Each shipment has its own tracking.</p>
+
+        {%- when 'returns' -%}
+          {%- if rd > 0 -%}
+            <h2>Return window</h2>
+            <p>You may return an item within {{ rd }} days of delivery if it is unused and in its original packaging.</p>
+          {%- endif -%}
+
+          <h2>Damaged, defective or wrong item</h2>
+          <p>
+            {%- if email_link != blank -%}Write to {{ email_link }}{%- else -%}Contact us{%- endif %} with your order number and photos of the item and the packaging. We will send a replacement or refund you.
+          </p>
+
+          <h2>Changed your mind</h2>
+          <p>
+            {%- if email_link != blank -%}Write to {{ email_link }}{%- else -%}Contact us{%- endif %} for return instructions. Do not send anything back before you hear from us.
+            {%- if section.settings.extra != blank %} Who pays for return shipping is set out in the notes at the end of this page.{% endif -%}
+          </p>
+
+          <h2>How to start a return</h2>
+          <ol>
+            <li>Write to us with your order number and the reason.</li>
+            <li>We reply with the return address and steps. The return address is a U.S. address and may differ from where your order shipped.</li>
+            <li>Ship the item with tracking and keep the receipt.</li>
+          </ol>
+
+          <h2>Refunds</h2>
+          <p>
+            Refunds go to the original payment method
+            {%- if refund_text != blank %} within {{ refund_text }} after we receive and inspect the return, or after we approve a refund without a return{% endif -%}.
+            Your bank may take extra days to show it.
+          </p>
+
+          <h2>Cancellations</h2>
+          <p>You may cancel before the order ships. Write to us as soon as you can. After it ships, use the return process.</p>
+
+          <h2>Late orders</h2>
+          <p>If we cannot ship by the date we stated, we will tell you and offer a full refund if you want to cancel.</p>
+      {%- endcase -%}
+
+      {%- if section.settings.extra != blank -%}
+        <h2>Notes</h2>
+        {{ section.settings.extra }}
+      {%- endif -%}
+
+      <h2>Contact</h2>
+      <p>
+        {{ business | escape }}
+        {%- if address != blank %}<br>{{ address | escape | newline_to_br }}{% endif -%}
+        {%- if email_link != blank %}<br>{{ email_link }}{% endif -%}
+      </p>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Policy page",
+  "tag": "section",
+  "class": "section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Template text that reads Theme settings, Store facts. Have a professional review it before you publish."
+    },
+    {
+      "type": "select",
+      "id": "kind",
+      "label": "Policy",
+      "options": [
+        { "value": "shipping", "label": "Shipping" },
+        { "value": "returns", "label": "Returns and refunds" }
+      ],
+      "default": "shipping"
+    },
+    {
+      "type": "richtext",
+      "id": "extra",
+      "label": "Extra notes shown at the end",
+      "info": "For example who pays for return shipping, or restocking fees. Write only what you will honor."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 36
+    }
+  ],
+  "presets": [
+    {
+      "name": "Policy page"
+    }
+  ]
+}
+{% endschema %}

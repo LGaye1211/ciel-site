@@ -1,0 +1,7 @@
+{%- comment -%}
+  Prints "N business hour(s)". Param: count (number).
+  Prints nothing when count is missing or zero.
+{%- endcomment -%}
+{%- if count > 0 -%}
+  {{- count }} business hour{% unless count == 1 %}s{% endunless -%}
+{%- endif -%}

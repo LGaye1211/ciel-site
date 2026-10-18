@@ -1,0 +1,20 @@
+{%- comment -%}
+  Prints the delivery window from Theme settings > Store facts, for example
+  "3-7 business days". Prints nothing unless both ends are filled in.
+{%- endcomment -%}
+{%- liquid
+  assign dmin = settings.delivery_min_days
+  assign dmax = settings.delivery_max_days
+  if dmin > dmax
+    assign swap = dmin
+    assign dmin = dmax
+    assign dmax = swap
+  endif
+-%}
+{%- if dmin > 0 and dmax > 0 -%}
+  {%- if dmin == dmax -%}
+    {%- render 'store-days', count: dmin -%}
+  {%- else -%}
+    {{- dmin }}-{{ dmax }} business days
+  {%- endif -%}
+{%- endif -%}

@@ -1,0 +1,99 @@
+/* Dropship store additions. Loaded after base.css. Uses Dawn's color-scheme variables. */
+
+.facts-bar {
+  padding: 0.8rem 0;
+  font-size: 1.3rem;
+}
+
+.facts-bar__list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem 2.4rem;
+  margin: 0 auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  list-style: none;
+}
+
+.facts-bar__item {
+  margin: 0;
+  letter-spacing: 0.04rem;
+}
+
+.facts-bar--hint p {
+  margin: 0;
+  font-size: 1.2rem;
+  text-align: center;
+  opacity: 0.8;
+}
+
+.facts-heading {
+  margin: 0 0 2.4rem;
+  text-align: center;
+}
+
+.facts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+  gap: 1.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.facts-card {
+  padding: 2rem;
+  border: 0.1rem solid rgba(var(--color-foreground), 0.12);
+  border-radius: var(--text-boxes-radius, 0);
+  background: rgba(var(--color-foreground), 0.03);
+}
+
+.facts-card h3 {
+  margin: 0 0 0.8rem;
+}
+
+.facts-card p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.faq-list,
+.policy-page,
+.about-page,
+.contact-details {
+  max-width: 72rem;
+  margin: 0 auto;
+}
+
+.policy-page h2,
+.about-page h2 {
+  margin-top: 3.2rem;
+  margin-bottom: 0.8rem;
+  font-size: 2rem;
+}
+
+.policy-page p,
+.about-page p,
+.about-page li,
+.contact-details p {
+  line-height: 1.6;
+}
+
+.faq-list .faq-item + .faq-item {
+  margin-top: 0;
+}
+
+.design-hint {
+  margin: 1.2rem 0;
+  padding: 1.2rem 1.6rem;
+  border: 0.1rem dashed rgba(var(--color-foreground), 0.4);
+  font-size: 1.3rem;
+}
+
+/* Keep tap targets comfortable on phones. */
+@media screen and (max-width: 749px) {
+  .facts-bar__list {
+    gap: 0.2rem 1.6rem;
+  }
+}

@@ -1,0 +1,89 @@
+{%- style -%}
+  .section-{{ section.id }}-padding {
+    padding-top: {{ section.settings.padding_top | times: 0.75 | round: 0 }}px;
+    padding-bottom: {{ section.settings.padding_bottom | times: 0.75 | round: 0 }}px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .section-{{ section.id }}-padding {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+    }
+  }
+{%- endstyle -%}
+
+{%- liquid
+  assign business = settings.legal_name
+  assign email = settings.support_email
+  assign address = settings.legal_address
+-%}
+{%- capture reply_text -%}{%- render 'store-hours', count: settings.reply_hours -%}{%- endcapture -%}
+{%- assign reply_text = reply_text | strip -%}
+
+<div class="color-{{ section.settings.color_scheme }} gradient">
+  <div class="page-width section-{{ section.id }}-padding">
+    <div class="contact-details rte">
+      {%- if email != blank or address != blank or business != blank -%}
+        <p>
+          {%- if business != blank -%}<strong>{{ business | escape }}</strong>{%- endif -%}
+          {%- if address != blank %}<br>{{ address | escape | newline_to_br }}{% endif -%}
+          {%- if email != blank %}<br><a href="mailto:{{ email | escape }}">{{ email | escape }}</a>{% endif -%}
+        </p>
+        {%- if reply_text != blank -%}
+          <p>We reply within {{ reply_text }}.</p>
+        {%- endif -%}
+        <p>Include your order number and the email you used at checkout. We can usually answer from the tracking record.</p>
+      {%- elsif request.design_mode -%}
+        <p class="design-hint">Fill in Business name, address and email under Theme settings, Store facts.</p>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Contact details",
+  "tag": "section",
+  "class": "section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Reads Theme settings, Store facts."
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Contact details"
+    }
+  ]
+}
+{% endschema %}

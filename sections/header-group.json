@@ -1,0 +1,35 @@
+{
+  "name": "t:sections.header.name",
+  "type": "header",
+  "sections": {
+    "facts-bar": {
+      "type": "store-facts-bar",
+      "settings": {
+        "color_scheme": "scheme-3",
+        "show_us_warehouse": true
+      }
+    },
+    "header": {
+      "type": "header",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "menu_color_scheme": "scheme-1",
+        "logo_position": "middle-left",
+        "menu": "main-menu",
+        "menu_type_desktop": "dropdown",
+        "sticky_header_type": "on-scroll-up",
+        "show_line_separator": true,
+        "enable_country_selector": true,
+        "enable_language_selector": true,
+        "mobile_logo_position": "center",
+        "margin_bottom": 0,
+        "padding_top": 20,
+        "padding_bottom": 20
+      }
+    }
+  },
+  "order": [
+    "facts-bar",
+    "header"
+  ]
+}

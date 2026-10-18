@@ -1,0 +1,7 @@
+{%- comment -%}
+  Prints "N business day(s)". Param: count (number).
+  Prints nothing when count is missing or zero.
+{%- endcomment -%}
+{%- if count > 0 -%}
+  {{- count }} business day{% unless count == 1 %}s{% endunless -%}
+{%- endif -%}
